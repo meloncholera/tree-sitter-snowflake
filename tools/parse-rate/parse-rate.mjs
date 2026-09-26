@@ -162,8 +162,12 @@ if (isMain) {
       maxBuffer: 1 << 28,
       env: process.platform === 'win32' ? { ...process.env, CC: 'gcc', CXX: 'g++' } : process.env,
     });
+    if (proc.error) {
+      throw new Error(`parse-rate: could not run ${cli}: ${proc.error.message}`);
+    }
     const xml = proc.stdout.toString('utf8');
     const chunks = xml.split('<source name="');
+    const matched = new Set();
     for (let c = 1; c < chunks.length; c++) {
       const nl = chunks[c].indexOf('\n');
       const name = chunks[c].slice(0, nl).replace(/"?>?$/, '');
@@ -172,11 +176,18 @@ if (isMain) {
       if (!target) {
         throw new Error(`parse-rate: could not match XML <source name="${name}"> to a file in this batch`);
       }
+      matched.add(target);
       const starts = lineStarts(target.text);
       const ranges = errorRangesFromXml(body, starts);
       const errorBytes = ranges.reduce((sum, [a, b]) => sum + (b - a), 0);
       const total = Buffer.byteLength(target.text, 'utf8');
       perFile.push({ file: target.original, bytes: total, errorBytes, hasError: ranges.length > 0 });
+    }
+    // A CLI or grammar-load failure can exit non-zero with empty/truncated
+    // stdout while still not throwing above — a batch that silently matched
+    // fewer files than it was given is a false pass, not a clean run.
+    if (matched.size !== batch.length) {
+      throw new Error(`parse-rate: only matched ${matched.size}/${batch.length} files in batch starting at index ${i} — the CLI likely failed to run (check gcc/CC and the grammar build)`);
     }
   }
 
