@@ -59,7 +59,6 @@ export default grammar({
   precedences: $ => [
     [
       'postfix',
-      'binary_is',
       'unary_sign',
       'binary_exp',
       'binary_times',
@@ -69,6 +68,7 @@ export default grammar({
       'binary_in',
       'binary_compare',
       'binary_relation',
+      'binary_is',
       'pattern_matching',
       'between',
       'unary_not',

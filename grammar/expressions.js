@@ -243,7 +243,7 @@ export default {
       [$.op_other, 'binary_other'],
       [$.keyword_is, 'binary_is'],
       [$.is_not, 'binary_is'],
-      [$.keyword_collate, 'binary_is'],
+      [$.keyword_collate, 'postfix'],
       [$.keyword_like, 'pattern_matching'],
       [$.keyword_ilike, 'pattern_matching'],
       [$.keyword_regexp, 'pattern_matching'],

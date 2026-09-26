@@ -4572,7 +4572,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": "binary_is",
+          "value": "postfix",
           "content": {
             "type": "SEQ",
             "members": [
@@ -19158,10 +19158,6 @@
       },
       {
         "type": "STRING",
-        "value": "binary_is"
-      },
-      {
-        "type": "STRING",
         "value": "unary_sign"
       },
       {
@@ -19195,6 +19191,10 @@
       {
         "type": "STRING",
         "value": "binary_relation"
+      },
+      {
+        "type": "STRING",
+        "value": "binary_is"
       },
       {
         "type": "STRING",
