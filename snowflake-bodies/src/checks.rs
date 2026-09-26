@@ -12,6 +12,7 @@ pub enum Severity {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 pub struct Rule {
     pub id: &'static str,
     pub message: &'static str,
@@ -19,10 +20,13 @@ pub struct Rule {
 }
 
 // One `const` per rule ID, referenced both in `RULES` below and at every
-// `finding_by_rule()` call site — a renamed or mistyped ID is then a
-// compile error at the call site, rather than a string that
-// type-checks but panics inside `finding_by_rule()`'s `.unwrap()` on
-// ordinary input.
+// `finding_by_rule()` call site. A renamed const name is a compile
+// error at every reference, and a call site can never disagree with
+// its `RULES` entry, since both name the same `const`. That guarantee
+// depends on every caller passing one of these consts rather than a
+// fresh string literal — `finding_by_rule` still takes a plain
+// `&'static str`, so a hand-typed, mistyped literal at a new call site
+// would still compile and panic on ordinary input.
 pub const JS_EVAL: &str = "js-eval";
 pub const JS_IMPORT: &str = "js-import";
 pub const JS_HOST_API: &str = "js-host-api";
@@ -122,11 +126,15 @@ fn finding(name: &str, range: Range<usize>) -> Option<Finding> {
     })
 }
 
-// Builds a `Finding` for one of this module's own `RULES` entries. Takes
-// the rule's `const` (not an arbitrary `&str`) so a renamed or mistyped
-// ID fails to compile at the call site instead of panicking here or,
-// worse, silently doing nothing the way an `Option`-swallowing call site
-// could.
+// Builds a `Finding` for one of this module's own `RULES` entries.
+// Callers are expected to pass one of the rule-ID consts above, not a
+// fresh string literal: the signature still accepts any `&'static
+// str`, so it cannot reject an arbitrary literal, but a call site that
+// does use a const can never name a rule `RULES` doesn't have, since a
+// renamed or removed const is a compile error everywhere it's
+// referenced. A miss here is therefore always a real bug — the panic
+// exists so it fails loudly instead of silently doing nothing the way
+// an `Option`-swallowing call site could.
 fn finding_by_rule(id: &'static str, range: Range<usize>) -> Finding {
     let rule = RULES
         .iter()
