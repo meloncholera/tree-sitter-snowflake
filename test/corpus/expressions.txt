@@ -273,6 +273,234 @@ FROM t;
           (identifier))))))
 
 ================================================================================
+operator precedence: cast binds tighter than arithmetic
+================================================================================
+
+SELECT a + b::int;
+
+---
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (binary_expression
+            (field
+              (identifier))
+            (cast_expression
+              (field
+                (identifier))
+              (keyword_int))))))))
+
+================================================================================
+operator precedence: semi-structured path binds tighter than arithmetic
+================================================================================
+
+SELECT a + v:field;
+
+---
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (binary_expression
+            (field
+              (identifier))
+            (semi_structured
+              (field
+                (identifier))
+              (identifier))))))))
+
+================================================================================
+operator precedence: cast binds tighter than unary sign and concatenation
+================================================================================
+
+SELECT -x::int, a || b::varchar;
+
+---
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (unary_expression
+            (cast_expression
+              (field
+                (identifier))
+              (keyword_int))))
+        (term
+          (binary_expression
+            (field
+              (identifier))
+            (op_concat)
+            (cast_expression
+              (field
+                (identifier))
+              (varchar
+                (keyword_varchar)))))))))
+
+================================================================================
+operator precedence: NOT binds looser than comparison
+================================================================================
+
+SELECT * FROM t WHERE NOT a = b;
+
+---
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (unary_expression
+          (keyword_not)
+          (binary_expression
+            (field
+              (identifier))
+            (field
+              (identifier))))))))
+
+================================================================================
+operator precedence: IS and IS DISTINCT FROM bind looser than arithmetic and unary sign
+================================================================================
+
+SELECT a + b IS NULL, -x IS NULL, a = b IS NOT DISTINCT FROM c;
+
+---
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (binary_expression
+            (binary_expression
+              (field
+                (identifier))
+              (field
+                (identifier)))
+            (keyword_is)
+            (literal
+              (keyword_null))))
+        (term
+          (binary_expression
+            (unary_expression
+              (field
+                (identifier)))
+            (keyword_is)
+            (literal
+              (keyword_null))))
+        (term
+          (binary_expression
+            (binary_expression
+              (field
+                (identifier))
+              (field
+                (identifier)))
+            (not_distinct_from
+              (keyword_is)
+              (keyword_not)
+              (keyword_distinct)
+              (keyword_from))
+            (field
+              (identifier))))))))
+
+================================================================================
+operator precedence: COLLATE binds as tightly as a cast
+================================================================================
+
+SELECT a COLLATE 'utf8' = b;
+
+---
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (binary_expression
+            (binary_expression
+              (field
+                (identifier))
+              (keyword_collate)
+              (literal
+                (literal)))
+            (field
+              (identifier))))))))
+
+================================================================================
+operator precedence: NOT combined with BETWEEN and pattern matching
+================================================================================
+
+SELECT * FROM t WHERE NOT a BETWEEN 1 AND 10;
+SELECT * FROM t WHERE NOT a LIKE '%x%';
+
+---
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (unary_expression
+          (keyword_not)
+          (between_expression
+            (field
+              (identifier))
+            (keyword_between)
+            (literal)
+            (keyword_and)
+            (literal))))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (unary_expression
+          (keyword_not)
+          (binary_expression
+            (field
+              (identifier))
+            (keyword_like)
+            (literal
+              (literal))))))))
+
+================================================================================
 array constructor and named args
 ================================================================================
 
