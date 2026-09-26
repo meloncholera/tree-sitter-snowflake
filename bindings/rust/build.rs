@@ -38,25 +38,4 @@ fn main() {
     println!("cargo:rerun-if-changed={}", scanner_path.to_str().unwrap());
 
     c_config.compile("tree-sitter-snowflake");
-
-    // The per-query cfg guards below check only that the file exists —
-    // the generated template's `!"queries/x.scm".is_empty()` prefix is
-    // always true for a non-empty literal and trips clippy's
-    // `const_is_empty`, so it is deliberately absent.
-    println!("cargo:rustc-check-cfg=cfg(with_highlights_query)");
-    if std::path::Path::new("queries/highlights.scm").exists() {
-        println!("cargo:rustc-cfg=with_highlights_query");
-    }
-    println!("cargo:rustc-check-cfg=cfg(with_injections_query)");
-    if std::path::Path::new("queries/injections.scm").exists() {
-        println!("cargo:rustc-cfg=with_injections_query");
-    }
-    println!("cargo:rustc-check-cfg=cfg(with_locals_query)");
-    if std::path::Path::new("queries/locals.scm").exists() {
-        println!("cargo:rustc-cfg=with_locals_query");
-    }
-    println!("cargo:rustc-check-cfg=cfg(with_tags_query)");
-    if std::path::Path::new("queries/tags.scm").exists() {
-        println!("cargo:rustc-cfg=with_tags_query");
-    }
 }

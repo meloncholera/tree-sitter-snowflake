@@ -15,6 +15,14 @@ export function changedPaths(base, head, run = execFileSync) {
   return run('git', ['diff', '--no-renames', '--name-only', '-z', `${base}...${head}`], { encoding: 'utf8' }).split('\0').filter(Boolean);
 }
 
+export function versionsAgree(cargoToml, packageJson, treeSitterJson) {
+  const cargoVersion = cargoToml.match(/^version\s*=\s*"([^"]+)"\s*$/m)?.[1];
+  const npmVersion = JSON.parse(packageJson).version;
+  const treeSitterVersion = JSON.parse(treeSitterJson).metadata?.version;
+  assert.equal(npmVersion, cargoVersion, `package.json version "${npmVersion}" must match Cargo.toml version "${cargoVersion}"`);
+  assert.equal(treeSitterVersion, cargoVersion, `tree-sitter.json metadata.version "${treeSitterVersion}" must match Cargo.toml version "${cargoVersion}"`);
+}
+
 export function verifyResults(needs, event, draft) {
   assert(!draft, 'Draft pull requests require a full verification run');
   for (const [job, value] of Object.entries(needs)) {
@@ -30,12 +38,22 @@ if (process.argv[2] === 'changes') {
   let build = true;
   let windows = process.env.GITHUB_REF === 'refs/heads/main';
   if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
-    const { base, head } = event.pull_request;
-    const files = changedPaths(base.sha, head.sha);
-    build = !docsOnly(files);
-    windows = needsWindowsBinding(files);
+    // Only the title/body changed — no new commit, so no code diff to
+    // build against. A base-branch retarget still needs a full run.
+    if (event.action === 'edited' && !event.changes?.base) {
+      build = false;
+      windows = false;
+    } else {
+      const { base, head } = event.pull_request;
+      const files = changedPaths(base.sha, head.sha);
+      build = !docsOnly(files);
+      windows = needsWindowsBinding(files);
+    }
   }
   appendFileSync(process.env.GITHUB_OUTPUT, `build=${build}\nwindows=${windows}\n`);
 } else if (process.argv[2] === 'verify') {
   verifyResults(JSON.parse(process.env.JOB_RESULTS), process.env.GITHUB_EVENT_NAME, process.env.IS_DRAFT === 'true');
+} else if (process.argv[2] === 'versions') {
+  versionsAgree(readFileSync('Cargo.toml', 'utf8'), readFileSync('package.json', 'utf8'), readFileSync('tree-sitter.json', 'utf8'));
+  console.log('package.json and tree-sitter.json versions match Cargo.toml');
 }

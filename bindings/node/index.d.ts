@@ -53,11 +53,8 @@ declare const binding: {
   /** The language injection query for this grammar. */
   INJECTIONS_QUERY?: string;
 
-  /** The local variable query for this grammar. */
-  LOCALS_QUERY?: string;
-
-  /** The symbol tagging query for this grammar. */
-  TAGS_QUERY?: string;
+  /** The structural analysis query for this grammar. */
+  STRUCTURE_QUERY?: string;
 };
 
 export default binding;

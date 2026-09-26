@@ -23,10 +23,9 @@ node tools/parse-rate/parse-rate.mjs <path-to-corpus>   # add --json for per-fil
 | `snowflake` | 823 | 821 (99.8%) | 0.0% |
 | `snowflake-dw` | 162 | 162 (100%) | 0.0% |
 
-The two failing `snowflake` files (`Database/CORTEX_DEV/CORTEX_DEV.sql`
-and `Database/CORTEX_DEV/Schema/PUBLIC.sql`) contain streamlit
-`root_location='...` string literals that are genuinely unterminated in
-the source; erroring on them is correct behavior, not a grammar gap.
+The two failing `snowflake` files contain a Streamlit `root_location='...`
+string literal that is genuinely unterminated in the source; erroring on
+them is correct behavior, not a grammar gap.
 
 ### Pre-fork reference (2026-09-02, `tree-sitter-sequel-tsql` 0.4.2)
 
