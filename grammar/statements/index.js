@@ -9,6 +9,7 @@ import copy_rules from "./copy.js";
 import grant_rules from "./grant.js";
 import admin_rules from "./admin.js";
 import semantic_rules from "./semantic.js";
+import clause_rules from "../clauses.js";
 import { optional_parenthesis } from "../helpers.js";
 
 export default {
@@ -89,5 +90,6 @@ export default {
   ...grant_rules,
   ...admin_rules,
   ...semantic_rules,
+  ...clause_rules,
 
 };

@@ -91,10 +91,6 @@
       "type": "PATTERN",
       "value": "[mM][aA][tT][cC][hH][eE][dD]"
     },
-    "keyword_just": {
-      "type": "PATTERN",
-      "value": "[jJ][uU][sS][tT]"
-    },
     "keyword_set": {
       "type": "PATTERN",
       "value": "[sS][eE][tT]"
@@ -577,10 +573,6 @@
       "type": "PATTERN",
       "value": "[cC][oO][lL][uU][mM][nN]"
     },
-    "keyword_modify": {
-      "type": "PATTERN",
-      "value": "[mM][oO][dD][iI][fF][yY]"
-    },
     "keyword_table": {
       "type": "PATTERN",
       "value": "[tT][aA][bB][lL][eE]"
@@ -637,10 +629,6 @@
     "keyword_type": {
       "type": "PATTERN",
       "value": "[tT][yY][pP][eE]"
-    },
-    "keyword_suspended": {
-      "type": "PATTERN",
-      "value": "[sS][uU][sS][pP][eE][nN][dD][eE][dD]"
     },
     "keyword_enable": {
       "type": "PATTERN",
@@ -899,9 +887,9 @@
         }
       ]
     },
-    "keyword_initially": {
+    "keyword_suspended": {
       "type": "PATTERN",
-      "value": "[iI][nN][iI][tT][iI][aA][lL][lL][yY]"
+      "value": "[sS][uU][sS][pP][eE][nN][dD][eE][dD]"
     },
     "keyword_grant": {
       "type": "PATTERN",
@@ -934,6 +922,10 @@
     "keyword_ownership": {
       "type": "PATTERN",
       "value": "[oO][wW][nN][eE][rR][sS][hH][iI][pP]"
+    },
+    "keyword_modify": {
+      "type": "PATTERN",
+      "value": "[mM][oO][dD][iI][fF][yY]"
     },
     "keyword_usage": {
       "type": "PATTERN",
@@ -1031,10 +1023,6 @@
     "keyword_terse": {
       "type": "PATTERN",
       "value": "[tT][eE][rR][sS][eE]"
-    },
-    "keyword_history": {
-      "type": "PATTERN",
-      "value": "[hH][iI][sS][tT][oO][rR][yY]"
     },
     "keyword_start": {
       "type": "PATTERN",
@@ -7678,23 +7666,6 @@
         }
       ]
     },
-    "_if_not_exists": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "keyword_if"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "keyword_not"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "keyword_exists"
-        }
-      ]
-    },
     "create_table": {
       "type": "PREC_RIGHT",
       "value": 0,
@@ -10325,36 +10296,6 @@
         ]
       }
     },
-    "_if_exists_clause": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "keyword_if"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "keyword_exists"
-        }
-      ]
-    },
-    "_if_not_exists_clause": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "keyword_if"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "keyword_not"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "keyword_exists"
-        }
-      ]
-    },
     "_alter_statement": {
       "type": "CHOICE",
       "members": [
@@ -10653,7 +10594,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "_if_not_exists_clause"
+              "name": "_if_not_exists"
             },
             {
               "type": "BLANK"
@@ -16537,8 +16478,22 @@
                     "type": "FIELD",
                     "name": "target",
                     "content": {
-                      "type": "SYMBOL",
-                      "name": "stage_reference"
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "stage_reference"
+                        },
+                        {
+                          "type": "ALIAS",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "_single_quote_string"
+                          },
+                          "named": true,
+                          "value": "stage_reference"
+                        }
+                      ]
                     }
                   },
                   {
@@ -16610,8 +16565,22 @@
             ]
           },
           {
-            "type": "SYMBOL",
-            "name": "stage_reference"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "stage_reference"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_single_quote_string"
+                },
+                "named": true,
+                "value": "stage_reference"
+              }
+            ]
           },
           {
             "type": "REPEAT",
@@ -16634,8 +16603,22 @@
             "name": "keyword_get"
           },
           {
-            "type": "SYMBOL",
-            "name": "stage_reference"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "stage_reference"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_single_quote_string"
+                },
+                "named": true,
+                "value": "stage_reference"
+              }
+            ]
           },
           {
             "type": "CHOICE",
@@ -16681,8 +16664,22 @@
             "name": "keyword_list"
           },
           {
-            "type": "SYMBOL",
-            "name": "stage_reference"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "stage_reference"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_single_quote_string"
+                },
+                "named": true,
+                "value": "stage_reference"
+              }
+            ]
           },
           {
             "type": "REPEAT",
@@ -16705,8 +16702,22 @@
             "name": "keyword_remove"
           },
           {
-            "type": "SYMBOL",
-            "name": "stage_reference"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "stage_reference"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_single_quote_string"
+                },
+                "named": true,
+                "value": "stage_reference"
+              }
+            ]
           },
           {
             "type": "REPEAT",
@@ -17279,7 +17290,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "keyword_materized_view"
+          "name": "keyword_materialized_view"
         },
         {
           "type": "SYMBOL",
@@ -17351,7 +17362,7 @@
         }
       ]
     },
-    "keyword_materized_view": {
+    "keyword_materialized_view": {
       "type": "SEQ",
       "members": [
         {
@@ -19039,13 +19050,39 @@
           "name": "option"
         }
       ]
+    },
+    "_if_not_exists": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "keyword_if"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "keyword_not"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "keyword_exists"
+        }
+      ]
+    },
+    "_if_exists_clause": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "keyword_if"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "keyword_exists"
+        }
+      ]
     }
   },
   "extras": [
-    {
-      "type": "PATTERN",
-      "value": "\\s\\n"
-    },
     {
       "type": "PATTERN",
       "value": "\\s"
@@ -19117,11 +19154,11 @@
     [
       {
         "type": "STRING",
-        "value": "binary_is"
+        "value": "postfix"
       },
       {
         "type": "STRING",
-        "value": "unary_not"
+        "value": "binary_is"
       },
       {
         "type": "STRING",
@@ -19169,15 +19206,15 @@
       },
       {
         "type": "STRING",
+        "value": "unary_not"
+      },
+      {
+        "type": "STRING",
         "value": "clause_connective"
       },
       {
         "type": "STRING",
         "value": "clause_disjunctive"
-      },
-      {
-        "type": "STRING",
-        "value": "postfix"
       }
     ]
   ],

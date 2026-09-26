@@ -38,16 +38,28 @@ export function paren_list(field, requireFirst) {
   )
 }
 
-// `;`-separated statements with the final terminator optional — the body
-// shape `program` and every scripting block share. A plain function, not
-// a named rule: the empty-body case would make a named rule match the
-// empty string, which tree-sitter rejects outside the start rule.
-// Snowflake requires the separator between scripting statements, and
-// keeping it mandatory is what keeps statement-initial keywords (BREAK,
-// LET, RETURN, ...) out of the AS-less alias slot — with the separator
-// optional inside a body, the state after any completed statement also
-// accepts a fresh statement, and LALR merges that with the alias slot's
-// state.
+// The `SET <options> | UNSET <names>` alternative pair every ALTER
+// object shares. A plain function, not a named rule, so callers can
+// spread it alongside their own alternatives in one surrounding
+// `choice`/`repeat1`.
+export function set_unset_properties($) {
+  return [
+    seq($.keyword_set, comma_list($.option, true)),
+    seq($.keyword_unset, comma_list($.identifier, true)),
+  ];
+}
+
+// A stage path, unquoted (the common form) or single-quoted — Snowflake
+// requires the quoted form when the internal path contains spaces or
+// characters the bare stage_reference token can't lex (PUT/GET/LIST/
+// REMOVE/COPY INTO's stage operand, not the SELECT ... FROM @stage form).
+export function stage_reference_or_quoted($) {
+  return choice(
+    $.stage_reference,
+    alias($._single_quote_string, $.stage_reference),
+  );
+}
+
 // `;`-terminated statements — the body shape every scripting block and
 // the `$$` script share. Snowflake requires the terminator after each
 // scripting statement. A plain function, not a named rule: the empty-body

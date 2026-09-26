@@ -4,7 +4,7 @@
 // function rather than a shared named rule, because a named rule whose
 // every segment is optional matches the empty string and `generate`
 // rejects it.
-import { comma_list, paren_list } from "../helpers.js";
+import { comma_list, paren_list, set_unset_properties } from "../helpers.js";
 
 function alter_object(keyword, actions = []) {
   return $ => seq(
@@ -14,15 +14,12 @@ function alter_object(keyword, actions = []) {
     field('name', $.object_reference),
     choice(
       ...actions.map((action) => action($)),
-      seq($.keyword_set, comma_list($.option, true)),
-      seq($.keyword_unset, comma_list($.identifier, true)),
+      ...set_unset_properties($),
       seq($.keyword_rename, $.keyword_to, $.object_reference),
     ),
   );
 }
 export default {
-
-  _if_not_exists_clause: $ => seq($.keyword_if, $.keyword_not, $.keyword_exists),
 
   _alter_statement: $ => choice(
     $.alter_table,
@@ -58,15 +55,14 @@ export default {
       seq($.keyword_swap, $.keyword_with, $.object_reference),
       seq($.keyword_add, $.keyword_search, $.keyword_optimization, optional($.keyword_on)),
       seq($.keyword_drop, $.keyword_search, $.keyword_optimization),
-      seq($.keyword_set, comma_list($.option, true)),
-      seq($.keyword_unset, comma_list($.identifier, true)),
+      ...set_unset_properties($),
     )),
   )),
 
   add_column_action: $ => seq(
     $.keyword_add,
     $.keyword_column,
-    optional($._if_not_exists_clause),
+    optional($._if_not_exists),
     comma_list($.column_definition, true),
   ),
 
@@ -125,8 +121,7 @@ export default {
     field('name', $.object_reference),
     repeat1(choice(
       seq($.keyword_rename, $.keyword_to, $.object_reference),
-      seq($.keyword_set, comma_list($.option, true)),
-      seq($.keyword_unset, comma_list($.identifier, true)),
+      ...set_unset_properties($),
       seq($.keyword_add, $.keyword_row, $.keyword_access, $.keyword_policy, $.object_reference),
       seq($.keyword_drop, $.keyword_row, $.keyword_access, $.keyword_policy),
       $.keyword_secure,
@@ -165,10 +160,7 @@ export default {
   alter_session: $ => prec.right(seq(
     $.keyword_alter,
     $.keyword_session,
-    choice(
-      seq($.keyword_set, comma_list($.option, true)),
-      seq($.keyword_unset, comma_list($.identifier, true)),
-    ),
+    choice(...set_unset_properties($)),
   )),
 
   // ALTER ACCOUNT SET <parameter> = value [, ...] — the account-level
@@ -176,10 +168,7 @@ export default {
   alter_account: $ => prec.right(seq(
     $.keyword_alter,
     $.keyword_account,
-    choice(
-      seq($.keyword_set, comma_list($.option, true)),
-      seq($.keyword_unset, comma_list($.identifier, true)),
-    ),
+    choice(...set_unset_properties($)),
   )),
 
 };

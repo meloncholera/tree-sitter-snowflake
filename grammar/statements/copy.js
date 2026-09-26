@@ -1,4 +1,4 @@
-import { comma_list, paren_list } from "../helpers.js";
+import { comma_list, paren_list, stage_reference_or_quoted } from "../helpers.js";
 
 // Snowflake staging and data transfer: COPY INTO in both directions,
 // PUT/GET, LIST, REMOVE.
@@ -24,7 +24,7 @@ export default {
         ),
       ),
       seq(
-        field('target', $.stage_reference),
+        field('target', stage_reference_or_quoted($)),
         $.keyword_from,
         choice(
           field('source', $.object_reference),
@@ -40,14 +40,14 @@ export default {
   put_statement: $ => prec.right(seq(
     $.keyword_put,
     choice(alias($._file_uri, $.literal), alias($._single_quote_string, $.literal)),
-    $.stage_reference,
+    stage_reference_or_quoted($),
     repeat($.option),
   )),
 
   // GET @stage[/path] file://path [options]
   get_statement: $ => prec.right(seq(
     $.keyword_get,
-    $.stage_reference,
+    stage_reference_or_quoted($),
     choice(alias($._file_uri, $.literal), alias($._single_quote_string, $.literal)),
     repeat($.option),
   )),
@@ -55,14 +55,14 @@ export default {
   // LIST @stage[/path] [PATTERN = '...'] [options]
   list_statement: $ => prec.right(seq(
     $.keyword_list,
-    $.stage_reference,
+    stage_reference_or_quoted($),
     repeat($.option),
   )),
 
   // REMOVE @stage/path [options]
   remove_statement: $ => prec.right(seq(
     $.keyword_remove,
-    $.stage_reference,
+    stage_reference_or_quoted($),
     repeat($.option),
   )),
 

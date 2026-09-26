@@ -35,15 +35,15 @@ WHEN NOT MATCHED AND s.new = TRUE THEN INSERT (id, v) VALUES (s.id, s.v);
                 (identifier)))))
         (identifier))
       (keyword_on)
-      (semi_structured
-        (binary_expression
-          (field
-            (object_reference
-              (identifier))
+      (binary_expression
+        (field
+          (object_reference
             (identifier))
-          (field
-            (identifier)))
-        (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier)))
       (merge_action
         (keyword_when)
         (keyword_matched)
@@ -224,23 +224,23 @@ WHERE tgt.id = o.id AND o.dead = TRUE;
       (where
         (keyword_where)
         (binary_expression
-          (semi_structured
-            (binary_expression
-              (semi_structured
-                (binary_expression
-                  (field
-                    (object_reference
-                      (identifier))
-                    (identifier))
-                  (field
-                    (identifier)))
+          (binary_expression
+            (field
+              (object_reference
                 (identifier))
-              (keyword_and)
-              (field
-                (identifier)))
-            (identifier))
-          (literal
-            (keyword_true)))))))
+              (identifier))
+            (field
+              (object_reference
+                (identifier))
+              (identifier)))
+          (keyword_and)
+          (binary_expression
+            (field
+              (object_reference
+                (identifier))
+              (identifier))
+            (literal
+              (keyword_true))))))))
 
 ================================================================================
 copy into both directions
@@ -341,6 +341,37 @@ REMOVE @stage/old.csv;
         (identifier)
         (literal
           (literal)))))
+  (statement
+    (remove_statement
+      (keyword_remove)
+      (stage_reference))))
+
+================================================================================
+put get list remove with quoted stage paths
+================================================================================
+
+GET '@st/f.csv' 'file:///tmp/out/';
+PUT 'file:///tmp/in/f.csv' '@st/with space';
+LIST '@st/with space';
+REMOVE '@st/with space';
+
+---
+
+(program
+  (statement
+    (get_statement
+      (keyword_get)
+      (stage_reference)
+      (literal)))
+  (statement
+    (put_statement
+      (keyword_put)
+      (literal)
+      (stage_reference)))
+  (statement
+    (list_statement
+      (keyword_list)
+      (stage_reference)))
   (statement
     (remove_statement
       (keyword_remove)

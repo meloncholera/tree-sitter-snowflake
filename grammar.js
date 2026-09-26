@@ -9,7 +9,6 @@ export default grammar({
   name: 'snowflake',
 
   extras: $ => [
-    /\s\n/,
     /\s/,
     $.comment,
     $.marginalia,
@@ -59,8 +58,8 @@ export default grammar({
 
   precedences: $ => [
     [
+      'postfix',
       'binary_is',
-      'unary_not',
       'unary_sign',
       'binary_exp',
       'binary_times',
@@ -72,9 +71,9 @@ export default grammar({
       'binary_relation',
       'pattern_matching',
       'between',
+      'unary_not',
       'clause_connective',
       'clause_disjunctive',
-      'postfix',
     ],
   ],
 
