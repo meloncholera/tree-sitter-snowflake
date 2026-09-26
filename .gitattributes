@@ -16,6 +16,8 @@
 *.gyp                    text eol=lf
 *.scm                    text eol=lf
 src/parser.c             linguist-generated=true
+src/grammar.json         linguist-generated=true
+src/node-types.json      linguist-generated=true
 
 # JavaScript / TypeScript (node bindings and tooling scripts)
 *.js                     text eol=lf linguist-detectable=true linguist-language=JavaScript
