@@ -5,7 +5,7 @@ resolver = "3"
 [package]
 name = "tree-sitter-snowflake"
 description = "Tree-sitter grammar for Snowflake SQL"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["M. Reifschneider"]
 license = "MIT"
 readme = "README.md"
