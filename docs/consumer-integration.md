@@ -126,7 +126,8 @@ its `tree-sitter` dependency is used only for development and tests.
 
 The companion supports tree-sitter `>=0.26, <0.28`. Applications exchanging its trees must
 resolve the same tree-sitter version. The verification workflow tests 0.27 and separately pins
-both workspace members to 0.26. The generated grammar uses ABI 15, accepted by both versions.
+both workspace members to 0.26 to keep that declared floor honest — not because a consumer
+resolves 0.26 today. The generated grammar uses ABI 15, accepted by both versions.
 
 The npm `tree-sitter` runtime binding has a separate version line from the Rust `tree-sitter`
 crate and the npm `tree-sitter-cli` package. Consult each package's manifest when selecting

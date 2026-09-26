@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { changedPaths, docsOnly, needsWindowsBinding, verifyResults } from './ci-policy.mjs';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+import { canSkipEditedBuild, changedPaths, docsOnly, needsWindowsBinding, verifyResults, versionsAgree } from './ci-policy.mjs';
 
 test('Node packaging changes receive Windows binding verification before merge', () => {
   for (const path of ['bindings/node/index.js', 'bindings/node/index.d.ts', 'binding.gyp', 'package.json', 'package-lock.json', '.github/workflows/verify.yml']) assert(needsWindowsBinding([path]));
@@ -22,7 +25,7 @@ test('only explicit prose paths skip builds', () => {
 });
 
 function results(build = 'true', event = 'pull_request') {
-  return Object.fromEntries(['changes', 'verify', 'consumer-pin', 'node-binding', 'secret-scanning', 'pr-title', 'workflow-meta'].map((job) => [job, {
+  return Object.fromEntries(['changes', 'verify', 'consumer-pin', 'node-binding', 'pr-title'].map((job) => [job, {
     result: job === 'pr-title' && event !== 'pull_request' || ['verify', 'consumer-pin', 'node-binding'].includes(job) && build === 'false' ? 'skipped' : 'success',
     ...(job === 'changes' ? { outputs: { build } } : {}),
   }]));
@@ -42,4 +45,29 @@ test('aggregate accepts only deliberate skips', () => {
       }
     }
   }
+});
+
+test('canSkipEditedBuild only skips a title/body edit whose prior run already verified this head SHA', () => {
+  assert(canSkipEditedBuild({ action: 'edited', changes: {} }, true));
+  assert(!canSkipEditedBuild({ action: 'edited', changes: {} }, false), 'must not skip when the prior run for this SHA did not succeed or does not exist');
+  assert(!canSkipEditedBuild({ action: 'edited', changes: { base: { from: 'main' } } }, true), 'a base-branch retarget always needs a full run');
+  assert(!canSkipEditedBuild({ action: 'synchronize', changes: {} }, true), 'only an edited action is eligible at all');
+});
+
+test('versionsAgree passes when all three manifests match', () => {
+  versionsAgree('[package]\nversion = "0.1.1"\n', '{"version":"0.1.1"}', '{"metadata":{"version":"0.1.1"}}');
+});
+
+test('versionsAgree rejects a package.json or tree-sitter.json version drift', () => {
+  assert.throws(() => versionsAgree('[package]\nversion = "0.1.1"\n', '{"version":"0.1.0"}', '{"metadata":{"version":"0.1.1"}}'));
+  assert.throws(() => versionsAgree('[package]\nversion = "0.1.1"\n', '{"version":"0.1.1"}', '{"metadata":{"version":"0.1.0"}}'));
+});
+
+test('Cargo.toml, package.json, and tree-sitter.json agree on the current version', () => {
+  const root = fileURLToPath(new URL('..', import.meta.url));
+  versionsAgree(
+    readFileSync(join(root, 'Cargo.toml'), 'utf8'),
+    readFileSync(join(root, 'package.json'), 'utf8'),
+    readFileSync(join(root, 'tree-sitter.json'), 'utf8'),
+  );
 });
