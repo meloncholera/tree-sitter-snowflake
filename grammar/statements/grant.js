@@ -101,7 +101,7 @@ export default {
   object_kind: $ => choice(
     $.keyword_table,
     $.keyword_view,
-    $.keyword_materized_view,
+    $.keyword_materialized_view,
     $.keyword_stage,
     $.keyword_file_format,
     $.keyword_function,
@@ -121,7 +121,7 @@ export default {
     $.identifier,
   ),
 
-  keyword_materized_view: $ => seq($.keyword_materialized, $.keyword_view),
+  keyword_materialized_view: $ => seq($.keyword_materialized, $.keyword_view),
   keyword_file_format: $ => seq($.keyword_file, $.keyword_format),
 
   _granted_to: $ => seq(

@@ -19,16 +19,14 @@
 // Anything else failing is a regression: a new keyword is eating an
 // identifier position. Run this whenever a keyword is added.
 import { spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync, mkdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import os from 'node:os';
+import { resolveTreeSitterCli, stripAnsi } from './fixture-result.mjs';
 
 const repo = fileURLToPath(new URL('..', import.meta.url));
-const exeCandidates = [
-  join(repo, 'node_modules/tree-sitter-cli/tree-sitter.exe'),
-  join(repo, 'node_modules/tree-sitter-cli/tree-sitter'),
-];
-const cli = exeCandidates.find((p) => statSync(p, { throwIfNoEntry: false })?.isFile()) ?? 'tree-sitter';
+const cli = resolveTreeSitterCli(repo);
 
 const kwFile = readFileSync(join(repo, 'grammar/keywords.js'), 'utf8');
 const words = [...new Set([...kwFile.matchAll(/make_keyword\("([a-z_0-9]+)"/g)].map((m) => m[1]))].sort();
@@ -39,8 +37,9 @@ const reserved = new Set(('all alter and any as between by case cast check colum
 // Clause/function keywords that need more tokens after them (class 2).
 const clauseKeywords = new Set(['except', 'limit', 'match_recognize', 'pivot', 'unpivot', 'window', 'extract', 'identifier', 'interval', 'top']);
 
-const scratch = join(repo, 'tmp', 'kwprobe-' + process.pid);
+const scratch = join(os.tmpdir(), 'kwprobe-' + process.pid);
 mkdirSync(scratch, { recursive: true });
+process.on('exit', () => rmSync(scratch, { recursive: true, force: true }));
 const cases = [];
 for (const w of words) {
   cases.push({ word: w, slot: 'alias', sql: `SELECT * FROM db.schema.t ${w}\n`, wantIdentifiers: 4 });
@@ -48,20 +47,49 @@ for (const w of words) {
 }
 cases.forEach((c, i) => { c.file = join(scratch, `${i}.sql`); writeFileSync(c.file, c.sql); });
 
+// Batched through `parse -x` (one process for many files, XML output)
+// rather than one `parse` process per case — the same pattern
+// tools/parse-rate/parse-rate.mjs uses, and for the same reason: 612
+// serial process spawns dominate this probe's run time.
+const BATCH = 40;
 const failures = [];
-for (const c of cases) {
-  const single = spawnSync(cli, ['parse', c.file], {
-    cwd: repo, encoding: 'utf8', maxBuffer: 1 << 26,
+for (let i = 0; i < cases.length; i += BATCH) {
+  const batch = cases.slice(i, i + BATCH);
+  const proc = spawnSync(cli, ['parse', '-x', ...batch.map((c) => c.file)], {
+    cwd: repo, encoding: 'utf8', maxBuffer: 1 << 28,
     env: { ...process.env, CC: 'gcc', CXX: 'g++' },
   });
-  const t = single.stdout.replace(/\[[0-9;]*m/g, '');
-  const err = /ERROR|MISSING/.test(t);
-  const ids = (t.match(/\(identifier[ \n)]/g) || []).length;
-  if (err || ids !== c.wantIdentifiers) {
-    failures.push({
-      ...c, err, ids,
-      expected: reserved.has(c.word.toUpperCase()) || clauseKeywords.has(c.word),
-    });
+  if (proc.error) {
+    throw new Error(`keyword-probe: could not run ${cli}: ${proc.error.message}`);
+  }
+  const xml = stripAnsi(proc.stdout);
+  const chunks = xml.split('<source name="');
+  const matched = new Set();
+  for (let ci = 1; ci < chunks.length; ci++) {
+    const nl = chunks[ci].indexOf('\n');
+    const name = chunks[ci].slice(0, nl).replace(/"?>?$/, '');
+    const body = chunks[ci].slice(nl);
+    const c = batch.find((f) => f.file === name) || batch.find((f) => name.replace(/\\/g, '/').endsWith(f.file.replace(/\\/g, '/')));
+    if (!c) {
+      throw new Error(`keyword-probe: could not match XML <source name="${name}"> to a case in this batch`);
+    }
+    matched.add(c);
+    const err = /ERROR|MISSING/.test(body);
+    const ids = (body.match(/<identifier[ >]/g) || []).length;
+    if (err || ids !== c.wantIdentifiers) {
+      failures.push({
+        ...c, err, ids,
+        expected: reserved.has(c.word.toUpperCase()) || clauseKeywords.has(c.word),
+      });
+    }
+  }
+  // A CLI or grammar-load failure can exit non-zero with empty stdout
+  // (0 chunks) while still not throwing above — a batch that silently
+  // matched fewer cases than it was given is a false pass, not a clean
+  // run, even though a parse ERROR/MISSING batch is expected to exit
+  // non-zero and must not be flagged here.
+  if (matched.size !== batch.length) {
+    throw new Error(`keyword-probe: only matched ${matched.size}/${batch.length} cases in batch starting at index ${i} — the CLI likely failed to run (check gcc/CC and the grammar build)`);
   }
 }
 

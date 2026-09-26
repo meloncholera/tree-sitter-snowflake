@@ -8994,7 +8994,7 @@
     "fields": {}
   },
   {
-    "type": "keyword_materized_view",
+    "type": "keyword_materialized_view",
     "named": true,
     "fields": {},
     "children": {
@@ -10571,7 +10571,7 @@
           "named": true
         },
         {
-          "type": "keyword_materized_view",
+          "type": "keyword_materialized_view",
           "named": true
         },
         {

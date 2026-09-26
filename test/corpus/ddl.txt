@@ -827,6 +827,89 @@ ALTER VIEW v RENAME TO v2;
         (identifier)))))
 
 ================================================================================
+alter with masking policy, row access policy, and search optimization
+================================================================================
+
+ALTER TABLE t ALTER COLUMN c SET MASKING POLICY p;
+ALTER TABLE t ALTER COLUMN c UNSET MASKING POLICY;
+ALTER TABLE t ADD SEARCH OPTIMIZATION;
+ALTER TABLE t DROP SEARCH OPTIMIZATION;
+ALTER VIEW v ADD ROW ACCESS POLICY p;
+ALTER VIEW v DROP ROW ACCESS POLICY;
+
+---
+
+(program
+  (statement
+    (alter_table
+      (keyword_alter)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (alter_column_action
+        (keyword_alter)
+        (keyword_column)
+        (identifier)
+        (keyword_set)
+        (keyword_masking)
+        (keyword_policy)
+        (object_reference
+          (identifier)))))
+  (statement
+    (alter_table
+      (keyword_alter)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (alter_column_action
+        (keyword_alter)
+        (keyword_column)
+        (identifier)
+        (keyword_unset)
+        (keyword_masking)
+        (keyword_policy))))
+  (statement
+    (alter_table
+      (keyword_alter)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (keyword_add)
+      (keyword_search)
+      (keyword_optimization)))
+  (statement
+    (alter_table
+      (keyword_alter)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (keyword_drop)
+      (keyword_search)
+      (keyword_optimization)))
+  (statement
+    (alter_view
+      (keyword_alter)
+      (keyword_view)
+      (object_reference
+        (identifier))
+      (keyword_add)
+      (keyword_row)
+      (keyword_access)
+      (keyword_policy)
+      (object_reference
+        (identifier))))
+  (statement
+    (alter_view
+      (keyword_alter)
+      (keyword_view)
+      (object_reference
+        (identifier))
+      (keyword_drop)
+      (keyword_row)
+      (keyword_access)
+      (keyword_policy))))
+
+================================================================================
 drop statements
 ================================================================================
 

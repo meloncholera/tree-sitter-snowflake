@@ -50,6 +50,7 @@ jobs:
             exit 0
           fi
           version=$(grep -m1 '^version = ' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
+          TAG="v${version}" node tools/release-policy.mjs prepare-npm
           branch="release-plz/release"
           git add -A
           git commit -m "chore(release): v${version}"

@@ -82,7 +82,6 @@ export default {
   )),
 
   _or_replace: $ => seq($.keyword_or, $.keyword_replace),
-  _if_not_exists: $ => seq($.keyword_if, $.keyword_not, $.keyword_exists),
 
   // CREATE [OR REPLACE] [TRANSIENT] TABLE [IF NOT EXISTS] name
   //   { ( column_definitions ) [table options]

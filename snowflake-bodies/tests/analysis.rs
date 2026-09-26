@@ -65,6 +65,23 @@ fn numeric_and_unknown_escapes_and_empty_bodies() {
         );
         assert_eq!(analysis.bodies[0].status, BodyStatus::Parsed);
     }
+
+    // A three-digit octal escape and a two-digit hex escape both decode to
+    // 'A' (0o101 == 0x41 == 65), each mapping back to its own source range.
+    let input = r#"CREATE FUNCTION f() RETURNS STRING LANGUAGE JAVASCRIPT AS '\101\x41';"#;
+    let result = Analyzer::new().unwrap().analyze(input).unwrap();
+    let source = result.bodies[0].source.as_ref().unwrap();
+    assert_eq!(source.text(), "AA");
+    assert_eq!(&input[source.source_range(0..1).unwrap()], r"\101");
+    assert_eq!(&input[source.source_range(1..2).unwrap()], r"\x41");
+
+    // The grammar rejects a completely empty dollar body with no content at
+    // all between the delimiters (unlike "$$ $$", which has whitespace) —
+    // see the README's "Only Parsed bodies..." paragraph. This library
+    // preserves that grammar behavior rather than working around it.
+    let input = "CREATE FUNCTION f() RETURNS STRING LANGUAGE JAVASCRIPT AS $$$$;";
+    let analysis = Analyzer::new().unwrap().analyze(input).unwrap();
+    assert!(!analysis.sql_errors.is_empty());
 }
 
 #[test]

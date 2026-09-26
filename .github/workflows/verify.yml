@@ -6,6 +6,7 @@
 #  Type                Entrypoint (runs in this repo only)
 #  Triggers            pull_request
 #                      push (dev, main)
+#                      workflow_dispatch
 #  Purpose             Regenerate the parser from grammar.js, fail on any
 #                      drift in the generated parser or the committed
 #                      node-kind snapshot, run the tree-sitter corpus and
@@ -14,12 +15,12 @@
 #                      carry no source-corpus identifiers, probe both
 #                      identifier slots for every keyword, build and test
 #                      the Rust binding (against the tree-sitter version
-#                      the consumers pin, and against the latest), build
-#                      and test the Node binding, validate the PR title,
-#                      scan for secrets, and lint workflow/YAML files. A
-#                      final aggregate job rolls every check up into a
-#                      single `Verify` status for branch rulesets to
-#                      require.
+#                      that is snowflake-bodies' declared floor, and
+#                      against the latest), build and test the Node
+#                      binding, validate the PR title, scan for secrets,
+#                      and lint workflow/YAML files. A final aggregate job
+#                      rolls every check up into a single `Verify` status
+#                      for branch rulesets to require.
 # =============================================================================
 
 name: Verify
@@ -36,63 +37,32 @@ permissions:
 
 concurrency:
   group: verify-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # A PR title/body edit must never cancel an in-flight run that is
+  # actually building this head SHA — only a real new commit
+  # (synchronize) or another non-edit trigger should preempt one.
+  cancel-in-progress: ${{ github.event.action != 'edited' }}
 
 jobs:
+  # Bundles the changed-paths check with two other small, checkout-only
+  # jobs (secret scanning, workflow/YAML linting) that each used to pay
+  # their own per-job minute for a few seconds of work.
   changes:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      build: ${{ steps.paths.outputs.build }}
-      windows: ${{ steps.paths.outputs.windows }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '24.x'
-      - id: paths
-        run: node tools/ci-policy.mjs changes
-
-  pr-title:
-    name: PR title
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      pull-requests: read
-    steps:
-      - name: Validate conventional PR title
-        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          types: |
-            feat
-            fix
-            docs
-            style
-            refactor
-            perf
-            test
-            chore
-            revert
-            ci
-            build
-            security
-
-  secret-scanning:
-    name: Secret scanning
+    name: Changed paths, secret scanning, and workflow/YAML checks
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
+      checks: read
+    outputs:
+      build: ${{ steps.paths.outputs.build }}
+      windows: ${{ steps.paths.outputs.windows }}
     env:
       GITLEAKS_VERSION: '8.30.1'
+      ACTIONLINT_VERSION: '1.7.12'
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
 
       - name: Cache Gitleaks
         id: cache-gitleaks
@@ -124,11 +94,121 @@ jobs:
 
       - name: Upload redacted secret scan report
         if: failure() && steps.scan.outcome == 'failure'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: gitleaks-report
           path: gitleaks-report.json
           retention-days: 3
+
+      - name: Cache actionlint
+        id: cache-actionlint
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.local/bin/actionlint
+          key: actionlint-linux-amd64-${{ env.ACTIONLINT_VERSION }}
+
+      - name: Install actionlint
+        if: steps.cache-actionlint.outputs.cache-hit != 'true'
+        env:
+          VERSION: ${{ env.ACTIONLINT_VERSION }}
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          base="https://github.com/rhysd/actionlint/releases/download/v${VERSION}"
+          asset="actionlint_${VERSION}_linux_amd64.tar.gz"
+          curl -sSfL -o "$tmp/$asset" "$base/$asset"
+          curl -sSfL -o "$tmp/checksums.txt" "$base/actionlint_${VERSION}_checksums.txt"
+          ( cd "$tmp" && grep " $asset\$" checksums.txt | sha256sum --check - )
+          mkdir -p "$HOME/.local/bin"
+          tar -xzf "$tmp/$asset" -C "$tmp" actionlint
+          install -m 0755 "$tmp/actionlint" "$HOME/.local/bin/actionlint"
+
+      - name: Run actionlint
+        run: $HOME/.local/bin/actionlint -color -ignore 'SC[0-9]+:(info|style):'
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24.x'
+
+      - name: Test CI policy
+        run: node --test tools/*.test.mjs tools/parse-rate/*.test.mjs
+
+      - name: Validate YAML files
+        run: |
+          python3 -m pip install --disable-pip-version-check --quiet pyyaml
+          python3 - <<'PYEOF'
+          import sys
+          import yaml
+          from pathlib import Path
+
+          ignored = {".git", "node_modules", "target", "dist"}
+          failures = []
+          for path in Path(".").rglob("*.y*ml"):
+              if any(part in ignored for part in path.parts):
+                  continue
+              try:
+                  with path.open("r", encoding="utf-8") as f:
+                      list(yaml.safe_load_all(f))
+              except yaml.YAMLError as exc:
+                  failures.append(f"{path}: {exc}")
+
+          if failures:
+              print("Invalid YAML found:")
+              for failure in failures:
+                  print(f"  {failure}")
+              sys.exit(1)
+          print("All YAML files parsed cleanly.")
+          PYEOF
+
+      # A pure title/body edit carries no new commit, so the head SHA is
+      # unchanged from whatever run last built it. Before skipping the
+      # build jobs for that reason, confirm THIS SHA's own most recent
+      # completed `Verify` run actually succeeded — otherwise a prior
+      # failed or still-running build for this exact commit would be
+      # silently overwritten by a green "nothing to do" result.
+      - name: Check this head SHA's most recent completed Verify run
+        id: prior
+        if: github.event_name == 'pull_request' && github.event.action == 'edited' && !github.event.changes.base
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          sha="${{ github.event.pull_request.head.sha }}"
+          conclusion=$(gh api "repos/${{ github.repository }}/commits/${sha}/check-runs" --jq '[.check_runs[] | select(.name == "Verify" and .status == "completed")] | sort_by(.completed_at) | last | .conclusion // "none"')
+          echo "conclusion=$conclusion" >> "$GITHUB_OUTPUT"
+
+      - id: paths
+        env:
+          PRIOR_VERIFIED: ${{ steps.prior.outputs.conclusion == 'success' }}
+        run: node tools/ci-policy.mjs changes
+
+  pr-title:
+    name: PR title
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Validate conventional PR title
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            chore
+            revert
+            ci
+            build
+            security
 
   verify:
     name: Grammar, fixtures, Rust build/test
@@ -199,7 +279,7 @@ jobs:
         run: node tools/package-check.mjs
 
   consumer-pin:
-    name: Rust build/test against tree-sitter 0.26 (the consumers' pin)
+    name: Rust build/test against tree-sitter 0.26 (snowflake-bodies' declared floor)
     needs: changes
     if: github.event.pull_request.draft != true && needs.changes.outputs.build == 'true'
     runs-on: ubuntu-latest
@@ -220,14 +300,18 @@ jobs:
 
       # The dev-dependency tracks the latest tree-sitter, so the `verify`
       # job above covers the newest release. This job covers the other
-      # direction: `cadence` and `marlin` both declare `tree-sitter = "0.26"`
-      # (resolved as `>=0.26, <0.27`), and the generated parser's ABI must
-      # stay one that version accepts. Edit the manifest in-job and test
-      # there. The `^tree-sitter = ` anchor matches only the dev-dependency —
+      # end of the range: snowflake-bodies/Cargo.toml declares
+      # `tree-sitter = ">=0.26, <0.28"`, and the generated parser's ABI
+      # must stay one that floor accepts. cadence and marlin both moved to
+      # `tree-sitter = "0.27"` (verified 2026-09-26), so 0.26 no longer
+      # matches any consumer's own pin — this job now exists solely to
+      # keep the companion's declared floor honest, not to track a
+      # consumer. Edit the manifest in-job and test there. The
+      # `^tree-sitter = ` anchor matches only the dev-dependency —
       # `tree-sitter-language` in [dependencies] has a different prefix.
       # Pin the companion's runtime dependency too, so its returned trees
-      # use the same tree-sitter types as a 0.26 consumer.
-      - name: Pin tree-sitter to 0.26 and test
+      # use the same tree-sitter types as a build at that floor.
+      - name: Pin tree-sitter to its declared floor and test
         run: |
           sed -i 's/^tree-sitter = .*/tree-sitter = "0.26"/' Cargo.toml
           sed -i 's/^tree-sitter = .*/tree-sitter = "0.26"/' snowflake-bodies/Cargo.toml
@@ -261,82 +345,9 @@ jobs:
       - name: Run the Node binding tests
         run: npm test
 
-  workflow-meta:
-    name: Workflow and YAML checks
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-    env:
-      ACTIONLINT_VERSION: '1.7.12'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Cache actionlint
-        id: cache-actionlint
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.local/bin/actionlint
-          key: actionlint-linux-amd64-${{ env.ACTIONLINT_VERSION }}
-
-      - name: Install actionlint
-        if: steps.cache-actionlint.outputs.cache-hit != 'true'
-        env:
-          VERSION: ${{ env.ACTIONLINT_VERSION }}
-        run: |
-          set -euo pipefail
-          tmp="$(mktemp -d)"
-          trap 'rm -rf "$tmp"' EXIT
-          base="https://github.com/rhysd/actionlint/releases/download/v${VERSION}"
-          asset="actionlint_${VERSION}_linux_amd64.tar.gz"
-          curl -sSfL -o "$tmp/$asset" "$base/$asset"
-          curl -sSfL -o "$tmp/checksums.txt" "$base/actionlint_${VERSION}_checksums.txt"
-          ( cd "$tmp" && grep " $asset\$" checksums.txt | sha256sum --check - )
-          mkdir -p "$HOME/.local/bin"
-          tar -xzf "$tmp/$asset" -C "$tmp" actionlint
-          install -m 0755 "$tmp/actionlint" "$HOME/.local/bin/actionlint"
-
-      - name: Run actionlint
-        run: $HOME/.local/bin/actionlint -color -ignore 'SC[0-9]+:(info|style):'
-
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '24.x'
-
-      - name: Test CI policy
-        run: node --test tools/*.test.mjs
-
-      - name: Validate YAML files
-        run: |
-          python3 -m pip install --disable-pip-version-check --quiet pyyaml
-          python3 - <<'PYEOF'
-          import sys
-          import yaml
-          from pathlib import Path
-
-          ignored = {".git", "node_modules", "target", "dist"}
-          failures = []
-          for path in Path(".").rglob("*.y*ml"):
-              if any(part in ignored for part in path.parts):
-                  continue
-              try:
-                  with path.open("r", encoding="utf-8") as f:
-                      list(yaml.safe_load_all(f))
-              except yaml.YAMLError as exc:
-                  failures.append(f"{path}: {exc}")
-
-          if failures:
-              print("Invalid YAML found:")
-              for failure in failures:
-                  print(f"  {failure}")
-              sys.exit(1)
-          print("All YAML files parsed cleanly.")
-          PYEOF
-
   ci:
     name: ${{ github.event_name == 'push' && 'Verify (push)' || 'Verify' }}
-    needs: [changes, verify, consumer-pin, node-binding, secret-scanning, pr-title, workflow-meta]
+    needs: [changes, verify, consumer-pin, node-binding, pr-title]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

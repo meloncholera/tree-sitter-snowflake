@@ -254,7 +254,7 @@ keyword_match
 keyword_match_recognize
 keyword_matched
 keyword_materialized
-keyword_materized_view
+keyword_materialized_view
 keyword_measures
 keyword_merge
 keyword_metrics

@@ -138,15 +138,15 @@ $$;
                           (identifier))
                         (identifier))
                       (keyword_on)
-                      (semi_structured
-                        (binary_expression
-                          (field
-                            (object_reference
-                              (identifier))
+                      (binary_expression
+                        (field
+                          (object_reference
                             (identifier))
-                          (field
-                            (identifier)))
-                        (identifier))
+                          (identifier))
+                        (field
+                          (object_reference
+                            (identifier))
+                          (identifier)))
                       (merge_action
                         (keyword_when)
                         (keyword_matched)

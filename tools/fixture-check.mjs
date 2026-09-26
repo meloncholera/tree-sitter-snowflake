@@ -5,19 +5,14 @@
 // has either. Zero ERROR/MISSING is not proof a fixture is valid Snowflake
 // (a parser has no semantic layer), but it is the regression signal.
 import { spawnSync } from 'node:child_process';
-import { readdirSync, statSync } from 'node:fs';
+import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
-import { fixtureResult } from './fixture-result.mjs';
+import { fixtureResult, resolveTreeSitterCli } from './fixture-result.mjs';
 
 const repo = fileURLToPath(new URL('..', import.meta.url));
-const exeCandidates = [
-  join(repo, 'node_modules/tree-sitter-cli/tree-sitter.exe'),
-  join(repo, 'node_modules/tree-sitter-cli/tree-sitter'),
-];
-const exe = exeCandidates.find((p) => statSync(p, { throwIfNoEntry: false })?.isFile());
-const cli = exe ?? 'tree-sitter';
+const cli = resolveTreeSitterCli(repo);
 const fixtures = readdirSync(join(repo, 'test/fixtures')).filter((f) => f.endsWith('.sql'));
 assert(fixtures.length > 0, 'No SQL fixtures found');
 

@@ -42,7 +42,9 @@ cc = "~1.4.4"
 # the published crate's runtime dependency is `tree-sitter-language`, so a
 # consumer's own `tree-sitter` version is what governs at their end, not
 # this line. The `consumer-pin` CI job covers the other direction by
-# rebuilding against 0.26, which is what `cadence` and `marlin` resolve.
+# rebuilding against 0.26, snowflake-bodies' declared floor (cadence and
+# marlin have both since moved to 0.27, so this no longer tracks either
+# consumer's own pin).
 #
 # Note 0.27 itself requires Rust 1.90, above the `rust-version = "1.85"`
 # declared above. That is not a contradiction: `rust-version` states what

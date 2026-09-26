@@ -50,6 +50,4 @@ export default {
     ),
   )),
 
-  _if_exists_clause: $ => seq($.keyword_if, $.keyword_exists),
-
 };

@@ -3,6 +3,7 @@ use std::ops::Range;
 use tree_sitter::{Node, Parser, Query, QueryCursor, StreamingIterator, Tree};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Severity {
     /// A documented restriction matched syntactically; symbol identity is unproven.
     Warning,
@@ -11,76 +12,99 @@ pub enum Severity {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 pub struct Rule {
     pub id: &'static str,
     pub message: &'static str,
     pub severity: Severity,
 }
 
+// One `const` per rule ID, referenced both in `RULES` below and at every
+// `finding_by_rule()` call site. A renamed const name is a compile
+// error at every reference, and a call site can never disagree with
+// its `RULES` entry, since both name the same `const`. That guarantee
+// depends on every caller passing one of these consts rather than a
+// fresh string literal — `finding_by_rule` still takes a plain
+// `&'static str`, so a hand-typed, mistyped literal at a new call site
+// would still compile and panic on ordinary input.
+pub const JS_EVAL: &str = "js-eval";
+pub const JS_IMPORT: &str = "js-import";
+pub const JS_HOST_API: &str = "js-host-api";
+pub const PYTHON_PROCESS: &str = "python-process";
+pub const CONCURRENCY: &str = "concurrency";
+pub const SESSION_BUILDER: &str = "session-builder";
+pub const JDBC_CONNECTION: &str = "jdbc-connection";
+pub const PYTHON_PUT_GET: &str = "python-put-get";
+pub const PYTHON_GET_PATTERN: &str = "python-get-pattern";
+pub const LOCAL_WRITE_PATH: &str = "local-write-path";
+pub const OWNER_TEMP_OBJECT: &str = "owner-temp-object";
+pub const SCALA_TASK_WAREHOUSE: &str = "scala-task-warehouse";
+
 pub const RULES: &[Rule] = &[
     Rule {
-        id: "js-eval",
+        id: JS_EVAL,
         message: "Snowflake JavaScript does not provide eval; review this call's binding.",
         severity: Severity::Warning,
     },
     Rule {
-        id: "js-import",
+        id: JS_IMPORT,
         message: "Snowflake JavaScript has no external library import mechanism.",
         severity: Severity::Warning,
     },
     Rule {
-        id: "js-host-api",
+        id: JS_HOST_API,
         message: "This browser/network API is not provided by the Snowflake JavaScript engine.",
         severity: Severity::Advisory,
     },
     Rule {
-        id: "python-process",
+        id: PYTHON_PROCESS,
         message: "Process creation is unsupported in Python stored procedures; review this call's binding.",
         severity: Severity::Warning,
     },
     Rule {
-        id: "concurrency",
+        id: CONCURRENCY,
         message: "Review concurrency: concurrent queries are unsupported; this construct alone does not prove concurrent queries.",
         severity: Severity::Advisory,
     },
     Rule {
-        id: "session-builder",
+        id: SESSION_BUILDER,
         message: "Creating a new Snowpark session is unsupported in Java/Scala stored procedures; review this builder use.",
         severity: Severity::Advisory,
     },
     Rule {
-        id: "jdbc-connection",
+        id: JDBC_CONNECTION,
         message: "Access to the Snowpark session JDBC connection is unsupported in stored procedures.",
         severity: Severity::Warning,
     },
     Rule {
-        id: "python-put-get",
+        id: PYTHON_PUT_GET,
         message: "Python stored procedures cannot execute PUT/GET through SQL APIs.",
         severity: Severity::Warning,
     },
     Rule {
-        id: "python-get-pattern",
+        id: PYTHON_GET_PATTERN,
         message: "Snowpark file.get in a Python stored procedure does not support stage-path pattern matching.",
         severity: Severity::Warning,
     },
     Rule {
-        id: "local-write-path",
+        id: LOCAL_WRITE_PATH,
         message: "Java/Scala procedure file downloads must write within /tmp; review this literal destination.",
         severity: Severity::Warning,
     },
     Rule {
-        id: "owner-temp-object",
+        id: OWNER_TEMP_OBJECT,
         message: "Named temporary objects are unsupported in owner-rights Snowpark procedures, including default owner rights.",
         severity: Severity::Warning,
     },
     Rule {
-        id: "scala-task-warehouse",
+        id: SCALA_TASK_WAREHOUSE,
         message: "This task calls a locally declared Scala procedure but has no warehouse; confirm name resolution and task configuration.",
         severity: Severity::Advisory,
     },
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct Finding {
     pub rule_id: &'static str,
     pub message: &'static str,
@@ -89,13 +113,39 @@ pub struct Finding {
     pub range: Range<usize>,
 }
 
-fn finding(id: &str, range: Range<usize>) -> Option<Finding> {
-    RULES.iter().find(|r| r.id == id).map(|rule| Finding {
+// `name` here is a tree-sitter query capture name, not necessarily a rule
+// ID — the caller falls through to its own non-rule capture handling
+// (`"sql"`, `"stage-path"`, ...) when this returns `None`, so a lookup
+// miss is an expected, ordinary outcome, not a programming error.
+fn finding(name: &str, range: Range<usize>) -> Option<Finding> {
+    RULES.iter().find(|r| r.id == name).map(|rule| Finding {
         rule_id: rule.id,
         message: rule.message,
         severity: rule.severity,
         range,
     })
+}
+
+// Builds a `Finding` for one of this module's own `RULES` entries.
+// Callers are expected to pass one of the rule-ID consts above, not a
+// fresh string literal: the signature still accepts any `&'static
+// str`, so it cannot reject an arbitrary literal, but a call site that
+// does use a const can never name a rule `RULES` doesn't have, since a
+// renamed or removed const is a compile error everywhere it's
+// referenced. A miss here is therefore always a real bug — the panic
+// exists so it fails loudly instead of silently doing nothing the way
+// an `Option`-swallowing call site could.
+fn finding_by_rule(id: &'static str, range: Range<usize>) -> Finding {
+    let rule = RULES
+        .iter()
+        .find(|r| r.id == id)
+        .unwrap_or_else(|| panic!("internal error: no RULES entry for id {id:?}"));
+    Finding {
+        rule_id: rule.id,
+        message: rule.message,
+        severity: rule.severity,
+        range,
+    }
 }
 
 pub(crate) fn check(
@@ -141,13 +191,13 @@ pub(crate) fn check(
                     if literal(node, text, body.language)
                         .is_some_and(|s| s.chars().any(|c| "*?[]".contains(c)))
                     {
-                        findings.push(finding("python-get-pattern", range).unwrap());
+                        findings.push(finding_by_rule(PYTHON_GET_PATTERN, range));
                     }
                 }
                 "local-path"
                     if literal(node, text, body.language).is_some_and(|s| !within_tmp(&s)) =>
                 {
-                    findings.push(finding("local-write-path", range).unwrap());
+                    findings.push(finding_by_rule(LOCAL_WRITE_PATH, range));
                 }
                 _ => {}
             }
@@ -177,7 +227,7 @@ fn check_sql(
     for node in descendants(tree.root_node()) {
         if matches!(node.kind(), "put_statement" | "get_statement") {
             if body.language == Language::Python {
-                findings.push(finding("python-put-get", range.clone()).unwrap());
+                findings.push(finding_by_rule(PYTHON_PUT_GET, range.clone()));
             } else if node.kind() == "get_statement" {
                 // GET's local destination is the only write path. PUT reads a
                 // local source, so a non-/tmp PUT source is not a write violation.
@@ -187,7 +237,7 @@ fn check_sql(
                 if let Some(local) = local {
                     let path = sql[local.byte_range()].trim_matches('\'');
                     if !within_tmp(path) {
-                        findings.push(finding("local-write-path", range.clone()).unwrap());
+                        findings.push(finding_by_rule(LOCAL_WRITE_PATH, range.clone()));
                     }
                 }
             }
@@ -198,7 +248,7 @@ fn check_sql(
                 .named_children(&mut cursor)
                 .any(|n| n.kind() == "keyword_temporary")
             {
-                findings.push(finding("owner-temp-object", range.clone()).unwrap());
+                findings.push(finding_by_rule(OWNER_TEMP_OBJECT, range.clone()));
             }
         }
     }
@@ -336,7 +386,7 @@ pub(crate) fn tasks(sql: &str, tree: &Tree, bodies: &[Body]) -> Vec<Finding> {
                 && candidates[0].source.is_some()
                 && declarations.iter().filter(|n| **n == name).count() == 1
             {
-                result.push(finding("scala-task-warehouse", call.byte_range()).unwrap());
+                result.push(finding_by_rule(SCALA_TASK_WAREHOUSE, call.byte_range()));
             }
         }
     }
