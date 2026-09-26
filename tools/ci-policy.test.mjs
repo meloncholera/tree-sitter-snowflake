@@ -3,7 +3,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
-import { changedPaths, docsOnly, needsWindowsBinding, verifyResults, versionsAgree } from './ci-policy.mjs';
+import { canSkipEditedBuild, changedPaths, docsOnly, needsWindowsBinding, verifyResults, versionsAgree } from './ci-policy.mjs';
 
 test('Node packaging changes receive Windows binding verification before merge', () => {
   for (const path of ['bindings/node/index.js', 'bindings/node/index.d.ts', 'binding.gyp', 'package.json', 'package-lock.json', '.github/workflows/verify.yml']) assert(needsWindowsBinding([path]));
@@ -45,6 +45,13 @@ test('aggregate accepts only deliberate skips', () => {
       }
     }
   }
+});
+
+test('canSkipEditedBuild only skips a title/body edit whose prior run already verified this head SHA', () => {
+  assert(canSkipEditedBuild({ action: 'edited', changes: {} }, true));
+  assert(!canSkipEditedBuild({ action: 'edited', changes: {} }, false), 'must not skip when the prior run for this SHA did not succeed or does not exist');
+  assert(!canSkipEditedBuild({ action: 'edited', changes: { base: { from: 'main' } } }, true), 'a base-branch retarget always needs a full run');
+  assert(!canSkipEditedBuild({ action: 'synchronize', changes: {} }, true), 'only an edited action is eligible at all');
 });
 
 test('versionsAgree passes when all three manifests match', () => {

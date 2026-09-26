@@ -37,7 +37,10 @@ permissions:
 
 concurrency:
   group: verify-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # A PR title/body edit must never cancel an in-flight run that is
+  # actually building this head SHA — only a real new commit
+  # (synchronize) or another non-edit trigger should preempt one.
+  cancel-in-progress: ${{ github.event.action != 'edited' }}
 
 jobs:
   # Bundles the changed-paths check with two other small, checkout-only
@@ -49,6 +52,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      checks: read
     outputs:
       build: ${{ steps.paths.outputs.build }}
       windows: ${{ steps.paths.outputs.windows }}
@@ -157,7 +161,26 @@ jobs:
           print("All YAML files parsed cleanly.")
           PYEOF
 
+      # A pure title/body edit carries no new commit, so the head SHA is
+      # unchanged from whatever run last built it. Before skipping the
+      # build jobs for that reason, confirm THIS SHA's own most recent
+      # completed `Verify` run actually succeeded — otherwise a prior
+      # failed or still-running build for this exact commit would be
+      # silently overwritten by a green "nothing to do" result.
+      - name: Check this head SHA's most recent completed Verify run
+        id: prior
+        if: github.event_name == 'pull_request' && github.event.action == 'edited' && !github.event.changes.base
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          sha="${{ github.event.pull_request.head.sha }}"
+          conclusion=$(gh api "repos/${{ github.repository }}/commits/${sha}/check-runs" --jq '[.check_runs[] | select(.name == "Verify" and .status == "completed")] | sort_by(.completed_at) | last | .conclusion // "none"')
+          echo "conclusion=$conclusion" >> "$GITHUB_OUTPUT"
+
       - id: paths
+        env:
+          PRIOR_VERIFIED: ${{ steps.prior.outputs.conclusion == 'success' }}
         run: node tools/ci-policy.mjs changes
 
   pr-title:

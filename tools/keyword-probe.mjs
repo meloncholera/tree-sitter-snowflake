@@ -59,8 +59,12 @@ for (let i = 0; i < cases.length; i += BATCH) {
     cwd: repo, encoding: 'utf8', maxBuffer: 1 << 28,
     env: { ...process.env, CC: 'gcc', CXX: 'g++' },
   });
+  if (proc.error) {
+    throw new Error(`keyword-probe: could not run ${cli}: ${proc.error.message}`);
+  }
   const xml = stripAnsi(proc.stdout);
   const chunks = xml.split('<source name="');
+  const matched = new Set();
   for (let ci = 1; ci < chunks.length; ci++) {
     const nl = chunks[ci].indexOf('\n');
     const name = chunks[ci].slice(0, nl).replace(/"?>?$/, '');
@@ -69,6 +73,7 @@ for (let i = 0; i < cases.length; i += BATCH) {
     if (!c) {
       throw new Error(`keyword-probe: could not match XML <source name="${name}"> to a case in this batch`);
     }
+    matched.add(c);
     const err = /ERROR|MISSING/.test(body);
     const ids = (body.match(/<identifier[ >]/g) || []).length;
     if (err || ids !== c.wantIdentifiers) {
@@ -77,6 +82,14 @@ for (let i = 0; i < cases.length; i += BATCH) {
         expected: reserved.has(c.word.toUpperCase()) || clauseKeywords.has(c.word),
       });
     }
+  }
+  // A CLI or grammar-load failure can exit non-zero with empty stdout
+  // (0 chunks) while still not throwing above — a batch that silently
+  // matched fewer cases than it was given is a false pass, not a clean
+  // run, even though a parse ERROR/MISSING batch is expected to exit
+  // non-zero and must not be flagged here.
+  if (matched.size !== batch.length) {
+    throw new Error(`keyword-probe: only matched ${matched.size}/${batch.length} cases in batch starting at index ${i} — the CLI likely failed to run (check gcc/CC and the grammar build)`);
   }
 }
 

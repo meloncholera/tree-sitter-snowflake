@@ -15,6 +15,16 @@ export function changedPaths(base, head, run = execFileSync) {
   return run('git', ['diff', '--no-renames', '--name-only', '-z', `${base}...${head}`], { encoding: 'utf8' }).split('\0').filter(Boolean);
 }
 
+// A pure title/body edit carries no new commit, so the head SHA is
+// unchanged from whatever run last built it — but only when that prior
+// run actually succeeded. Skipping on the strength of "no code diff"
+// alone lets an edit made after a failed or still-in-flight build for
+// this exact SHA post a green result that overwrites it. A base-branch
+// retarget always needs a full run regardless of `priorVerified`.
+export function canSkipEditedBuild(event, priorVerified) {
+  return event.action === 'edited' && !event.changes?.base && priorVerified;
+}
+
 export function versionsAgree(cargoToml, packageJson, treeSitterJson) {
   const cargoVersion = cargoToml.match(/^version\s*=\s*"([^"]+)"\s*$/m)?.[1];
   const npmVersion = JSON.parse(packageJson).version;
@@ -38,9 +48,7 @@ if (process.argv[2] === 'changes') {
   let build = true;
   let windows = process.env.GITHUB_REF === 'refs/heads/main';
   if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
-    // Only the title/body changed — no new commit, so no code diff to
-    // build against. A base-branch retarget still needs a full run.
-    if (event.action === 'edited' && !event.changes?.base) {
+    if (canSkipEditedBuild(event, process.env.PRIOR_VERIFIED === 'true')) {
       build = false;
       windows = false;
     } else {

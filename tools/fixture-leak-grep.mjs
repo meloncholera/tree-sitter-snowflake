@@ -10,9 +10,10 @@
 // not be the thing that discloses what it exists to keep out. A scanned
 // file is tokenized into words, and every contiguous 1-, 2-, and 3-word
 // run (joined with `_`, matching how the source identifiers are spelled)
-// is hashed and checked against the needle set, so `wells_fargo`,
-// `wells fargo`, and a bare `wells` all resolve to the same lookup a
-// plaintext regex would have caught.
+// is hashed and checked against the needle set, so a needle spelled
+// `acme_bank` in the source is caught whether a scanned file spells it
+// `acme_bank` or `acme bank`; a single word out of a multi-word needle
+// (a bare `acme`) is not, by itself, a hash the needle set contains.
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { readFileSync, statSync } from 'node:fs';
