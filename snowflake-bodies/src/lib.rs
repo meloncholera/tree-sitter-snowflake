@@ -79,6 +79,7 @@ pub enum ExecutionRights {
 
 /// An unavailable/invalid body must never be interpreted as measured at zero.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum BodyStatus {
     Parsed,
     UnavailableLanguage,
@@ -88,6 +89,7 @@ pub enum BodyStatus {
 }
 
 #[derive(Debug)]
+#[non_exhaustive]
 pub struct Body {
     pub name: String,
     pub routine_kind: RoutineKind,
@@ -104,6 +106,7 @@ pub struct Body {
 }
 
 #[derive(Debug)]
+#[non_exhaustive]
 pub struct Analysis {
     pub sql_tree: Tree,
     pub sql_errors: Vec<Range<usize>>,
