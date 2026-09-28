@@ -5,7 +5,7 @@ description = "Extract, parse, and check embedded Snowflake procedure and functi
 edition = "2024"
 rust-version = "1.90"
 license = "MIT"
-repository = "https://github.com/meloncholic/tree-sitter-snowflake.git"
+repository = "https://github.com/meloncholera/tree-sitter-snowflake.git"
 readme = "README.md"
 include = ["/src/**", "/queries/**", "/README.md", "/LICENSE"]
 
