@@ -30,8 +30,10 @@ const cli = resolveTreeSitterCli(repo);
 
 const kwFile = readFileSync(join(repo, 'grammar/keywords.js'), 'utf8');
 const words = [
-  ...new Set([...kwFile.matchAll(/make_keyword\("([a-z_0-9]+)"/g)].map((m) => m[1])),
+  ...new Set([...kwFile.matchAll(/make_keyword\(["']([a-z_0-9]+)["']/g)].map((m) => m[1])),
 ].sort();
+if (words.length === 0)
+  throw new Error('keyword-probe: no make_keyword calls found in grammar/keywords.js');
 
 // Snowflake's documented reserved words.
 const reserved = new Set(
