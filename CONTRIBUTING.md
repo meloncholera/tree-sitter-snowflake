@@ -13,10 +13,9 @@ npx --no-install tree-sitter generate
 cargo build
 ```
 
-The generated parser (`src/parser.c`, `src/grammar.json`, and
-`src/node-types.json`) is committed. Regenerate and commit the diff after any
-`grammar.js` change. A failed generation leaves the prior parser in place, so
-confirm that generation succeeded before trusting a subsequent test run.
+The generated parser (`src/parser.c`, `src/grammar.json`, and `src/node-types.json`) is committed.
+Regenerate and commit its diff after every `grammar.js` change. A failed generation leaves the prior
+parser in place, so confirm that generation succeeded before trusting a subsequent test run.
 
 ## Test
 
@@ -31,16 +30,25 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 ```
 
-`test/corpus/` holds per-construct tree assertions. `test/fixtures/*.sql` are
-larger real-shaped inputs checked for `ERROR`, `MISSING`, and zero-width nodes.
-The fixture identifier check prevents private source-corpus names from entering
-the public repository.
+`test/corpus/` holds per-construct tree assertions. `test/fixtures/*.sql` are larger real-shaped
+inputs checked for `ERROR`, `MISSING`, and zero-width nodes. The fixture identifier check prevents
+private source-corpus names from entering the public repository.
+
+## Lint and format
+
+```sh
+npm install --ignore-scripts
+npm run lint
+npm run format:check
+```
+
+Use `npm run format` to apply formatting. The generated parser under `src/` is excluded.
 
 ## Pull requests
 
-- Regenerate and commit the parser and node-kind snapshot with any grammar
-  change; CI rejects drift in either artifact.
+- Regenerate and commit the parser and node-kind snapshot with any grammar change; CI rejects drift
+  in either artifact.
 - Add a corpus case or extend a fixture for every newly supported construct.
-- Keep node-kind renames for a breaking release: consumers match these names
-  at runtime.
-- Keep the full Rust verification suite warning-free.
+- Keep node-kind renames for a breaking release: consumers match these names at runtime.
+- Run `cargo fmt`, `cargo clippy --all-targets -- -D warnings`, `npm run lint`, and
+  `npm run format:check`; keep the full Rust verification suite warning-free.

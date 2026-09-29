@@ -133,9 +133,10 @@ for (const relPath of tracked) {
   if (isBinary(buffer)) continue;
   scanned++;
   const found = ngramHashes(buffer.toString('utf8'));
-  const applicable = relPath.startsWith('test/fixtures/') && relPath.endsWith('.sql')
-    ? [...broadNeedleHashes, ...fixtureOnlyNeedleHashes]
-    : broadNeedleHashes;
+  const applicable =
+    relPath.startsWith('test/fixtures/') && relPath.endsWith('.sql')
+      ? [...broadNeedleHashes, ...fixtureOnlyNeedleHashes]
+      : broadNeedleHashes;
   for (const hash of applicable) {
     if (found.has(hash)) {
       console.log(`LEAK ${relPath}: matches needle hash ${hash.slice(0, 12)}...`);
@@ -144,5 +145,9 @@ for (const relPath of tracked) {
   }
 }
 
-console.log(hits ? `${hits} leak(s) found` : `clean: ${scanned} tracked files scanned, no source-corpus identifiers`);
+console.log(
+  hits
+    ? `${hits} leak(s) found`
+    : `clean: ${scanned} tracked files scanned, no source-corpus identifiers`,
+);
 process.exit(hits ? 1 : 0);

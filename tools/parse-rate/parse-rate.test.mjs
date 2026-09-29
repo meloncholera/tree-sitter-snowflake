@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { decode } from './parse-rate.mjs';
+import { Buffer } from 'node:buffer';
 
 const SAMPLE = 'SELECT 1;';
 

@@ -12,9 +12,17 @@ test('fixture validation rejects process failures and missing output', () => {
     { status: null, signal: 'SIGTERM' },
     { stdout: '' },
     { stdout: 'No language found' },
-  ]) assert.throws(() => fixtureResult({ ...valid, ...change }));
+  ])
+    assert.throws(() => fixtureResult({ ...valid, ...change }));
 });
 
 test('fixture validation retains ERROR, MISSING, and zero-width checks', () => {
-  assert.deepEqual(fixtureResult({ ...valid, stdout: '(program [0, 0] - [1, 0]\n (ERROR [0, 0] - [0, 1])\n (MISSING identifier [0, 1] - [0, 1]))' }), { errors: 2, zeroWidth: 1 });
+  assert.deepEqual(
+    fixtureResult({
+      ...valid,
+      stdout:
+        '(program [0, 0] - [1, 0]\n (ERROR [0, 0] - [0, 1])\n (MISSING identifier [0, 1] - [0, 1]))',
+    }),
+    { errors: 2, zeroWidth: 1 },
+  );
 });

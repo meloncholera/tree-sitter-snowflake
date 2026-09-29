@@ -3,10 +3,25 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
-import { canSkipEditedBuild, changedPaths, docsOnly, needsWindowsBinding, verifyResults, versionsAgree } from './ci-policy.mjs';
+import {
+  canSkipEditedBuild,
+  changedPaths,
+  docsOnly,
+  needsWindowsBinding,
+  verifyResults,
+  versionsAgree,
+} from './ci-policy.mjs';
 
 test('Node packaging changes receive Windows binding verification before merge', () => {
-  for (const path of ['bindings/node/index.js', 'bindings/node/index.d.ts', 'binding.gyp', 'package.json', 'package-lock.json', '.github/workflows/verify.yml']) assert(needsWindowsBinding([path]));
+  for (const path of [
+    'bindings/node/index.js',
+    'bindings/node/index.d.ts',
+    'binding.gyp',
+    'package.json',
+    'package-lock.json',
+    '.github/workflows/verify.yml',
+  ])
+    assert(needsWindowsBinding([path]));
   assert(!needsWindowsBinding(['README.md', 'grammar.js', 'snowflake-bodies/src/lib.rs']));
 });
 
@@ -21,14 +36,31 @@ test('renames include the removed source path when classifying prose', () => {
 
 test('only explicit prose paths skip builds', () => {
   assert(docsOnly(['README.md', 'docs/consumer-integration.md']));
-  for (const files of [[], ['grammar.js'], ['README.md', 'package.json'], ['snowflake-bodies/README.md'], ['test/fixtures/README.md'], ['.github/workflows/verify.yml']]) assert(!docsOnly(files));
+  for (const files of [
+    [],
+    ['grammar.js'],
+    ['README.md', 'package.json'],
+    ['snowflake-bodies/README.md'],
+    ['test/fixtures/README.md'],
+    ['.github/workflows/verify.yml'],
+  ])
+    assert(!docsOnly(files));
 });
 
 function results(build = 'true', event = 'pull_request') {
-  return Object.fromEntries(['changes', 'verify', 'consumer-pin', 'node-binding', 'pr-title'].map((job) => [job, {
-    result: job === 'pr-title' && event !== 'pull_request' || ['verify', 'consumer-pin', 'node-binding'].includes(job) && build === 'false' ? 'skipped' : 'success',
-    ...(job === 'changes' ? { outputs: { build } } : {}),
-  }]));
+  return Object.fromEntries(
+    ['changes', 'verify', 'consumer-pin', 'node-binding', 'pr-title'].map((job) => [
+      job,
+      {
+        result:
+          (job === 'pr-title' && event !== 'pull_request') ||
+          (['verify', 'consumer-pin', 'node-binding'].includes(job) && build === 'false')
+            ? 'skipped'
+            : 'success',
+        ...(job === 'changes' ? { outputs: { build } } : {}),
+      },
+    ]),
+  );
 }
 
 test('aggregate accepts only deliberate skips', () => {
@@ -40,7 +72,9 @@ test('aggregate accepts only deliberate skips', () => {
       for (const job of Object.keys(valid)) {
         for (const result of ['failure', 'cancelled', 'skipped']) {
           if (valid[job].result === result) continue;
-          assert.throws(() => verifyResults({ ...valid, [job]: { ...valid[job], result } }, event, false));
+          assert.throws(() =>
+            verifyResults({ ...valid, [job]: { ...valid[job], result } }, event, false),
+          );
         }
       }
     }
@@ -49,18 +83,43 @@ test('aggregate accepts only deliberate skips', () => {
 
 test('canSkipEditedBuild only skips a title/body edit whose prior run already verified this head SHA', () => {
   assert(canSkipEditedBuild({ action: 'edited', changes: {} }, true));
-  assert(!canSkipEditedBuild({ action: 'edited', changes: {} }, false), 'must not skip when the prior run for this SHA did not succeed or does not exist');
-  assert(!canSkipEditedBuild({ action: 'edited', changes: { base: { from: 'main' } } }, true), 'a base-branch retarget always needs a full run');
-  assert(!canSkipEditedBuild({ action: 'synchronize', changes: {} }, true), 'only an edited action is eligible at all');
+  assert(
+    !canSkipEditedBuild({ action: 'edited', changes: {} }, false),
+    'must not skip when the prior run for this SHA did not succeed or does not exist',
+  );
+  assert(
+    !canSkipEditedBuild({ action: 'edited', changes: { base: { from: 'main' } } }, true),
+    'a base-branch retarget always needs a full run',
+  );
+  assert(
+    !canSkipEditedBuild({ action: 'synchronize', changes: {} }, true),
+    'only an edited action is eligible at all',
+  );
 });
 
 test('versionsAgree passes when all three manifests match', () => {
-  versionsAgree('[package]\nversion = "0.1.1"\n', '{"version":"0.1.1"}', '{"metadata":{"version":"0.1.1"}}');
+  versionsAgree(
+    '[package]\nversion = "0.1.1"\n',
+    '{"version":"0.1.1"}',
+    '{"metadata":{"version":"0.1.1"}}',
+  );
 });
 
 test('versionsAgree rejects a package.json or tree-sitter.json version drift', () => {
-  assert.throws(() => versionsAgree('[package]\nversion = "0.1.1"\n', '{"version":"0.1.0"}', '{"metadata":{"version":"0.1.1"}}'));
-  assert.throws(() => versionsAgree('[package]\nversion = "0.1.1"\n', '{"version":"0.1.1"}', '{"metadata":{"version":"0.1.0"}}'));
+  assert.throws(() =>
+    versionsAgree(
+      '[package]\nversion = "0.1.1"\n',
+      '{"version":"0.1.0"}',
+      '{"metadata":{"version":"0.1.1"}}',
+    ),
+  );
+  assert.throws(() =>
+    versionsAgree(
+      '[package]\nversion = "0.1.1"\n',
+      '{"version":"0.1.1"}',
+      '{"metadata":{"version":"0.1.0"}}',
+    ),
+  );
 });
 
 test('Cargo.toml, package.json, and tree-sitter.json agree on the current version', () => {

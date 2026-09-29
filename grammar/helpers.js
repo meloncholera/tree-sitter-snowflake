@@ -1,25 +1,20 @@
 export function make_keyword(word) {
-  let str = "";
+  let str = '';
   for (var i = 0; i < word.length; i++) {
-    str = str + "[" + word.charAt(i).toLowerCase() + word.charAt(i).toUpperCase() + "]";
+    str = str + '[' + word.charAt(i).toLowerCase() + word.charAt(i).toUpperCase() + ']';
   }
   return new RegExp(str);
 }
 
 export function optional_parenthesis(node) {
-  return prec.right(
-    choice(
-      node,
-      wrapped_in_parenthesis(node),
-    ),
-  )
+  return prec.right(choice(node, wrapped_in_parenthesis(node)));
 }
 
 export function wrapped_in_parenthesis(node) {
   if (node) {
-    return seq("(", node, ")");
+    return seq('(', node, ')');
   }
-  return seq("(", ")");
+  return seq('(', ')');
 }
 
 export function comma_list(field, requireFirst) {
@@ -33,9 +28,7 @@ export function comma_list(field, requireFirst) {
 }
 
 export function paren_list(field, requireFirst) {
-  return wrapped_in_parenthesis(
-    comma_list(field, requireFirst),
-  )
+  return wrapped_in_parenthesis(comma_list(field, requireFirst));
 }
 
 // The `SET <options> | UNSET <names>` alternative pair every ALTER
@@ -54,10 +47,7 @@ export function set_unset_properties($) {
 // characters the bare stage_reference token can't lex (PUT/GET/LIST/
 // REMOVE/COPY INTO's stage operand, not the SELECT ... FROM @stage form).
 export function stage_reference_or_quoted($) {
-  return choice(
-    $.stage_reference,
-    alias($._single_quote_string, $.stage_reference),
-  );
+  return choice($.stage_reference, alias($._single_quote_string, $.stage_reference));
 }
 
 // `;`-terminated statements — the body shape every scripting block and
@@ -72,8 +62,5 @@ export function stage_reference_or_quoted($) {
 // self-terminates (each declaration carries its own `;`) so it takes no
 // separator after it.
 export function statement_list($) {
-  return repeat(choice(
-    $.declare_statement,
-    seq($.statement, ';'),
-  ))
+  return repeat(choice($.declare_statement, seq($.statement, ';')));
 }

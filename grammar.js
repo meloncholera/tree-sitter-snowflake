@@ -1,29 +1,21 @@
-import keyword_rules from "./grammar/keywords.js";
-import type_rules from "./grammar/types.js";
-import column_list_rules from "./grammar/column-lists.js";
-import expression_rules from "./grammar/expressions.js";
-import scripting_rules from "./grammar/scripting.js";
-import statement_rules from "./grammar/statements/index.js";
+import keyword_rules from './grammar/keywords.js';
+import type_rules from './grammar/types.js';
+import column_list_rules from './grammar/column-lists.js';
+import expression_rules from './grammar/expressions.js';
+import scripting_rules from './grammar/scripting.js';
+import statement_rules from './grammar/statements/index.js';
 
 export default grammar({
   name: 'snowflake',
 
-  extras: $ => [
-    /\s/,
-    $.comment,
-    $.marginalia,
-  ],
+  extras: ($) => [/\s/, $.comment, $.marginalia],
 
-  externals: $ => [
-    $._dollar_quote_start,
-    $._dollar_quote_content,
-    $._dollar_quote_end,
-  ],
+  externals: ($) => [$._dollar_quote_start, $._dollar_quote_content, $._dollar_quote_end],
 
   // Every entry arbitrates a real fork the parser must carry a few tokens
   // before it can settle; tree-sitter reports any that stop being needed
   // as "unnecessary conflicts" on generate, and those are removed.
-  conflicts: $ => [
+  conflicts: ($) => [
     // `a.b` — the prefix of a qualified column vs. an object reference.
     [$.object_reference, $._qualified_field],
     // `a.b.c` — how many parts belong to the reference.
@@ -56,7 +48,7 @@ export default grammar({
     [$.statement, $.dollar_quoted_script],
   ],
 
-  precedences: $ => [
+  precedences: (_) => [
     [
       'postfix',
       'unary_sign',
@@ -77,7 +69,7 @@ export default grammar({
     ],
   ],
 
-  word: $ => $._identifier,
+  word: ($) => $._identifier,
 
   rules: {
     // A Snowflake script: statements separated by a mandatory `;`, with
@@ -85,18 +77,15 @@ export default grammar({
     // requires the separator between statements, and keeping it mandatory
     // is what keeps statement-initial keywords from contending with the
     // AS-less alias slot — do not make it optional for convenience.
-    program: $ => seq(
-      repeat(seq($.statement, ';')),
-      optional($.statement),
-    ),
+    program: ($) => seq(repeat(seq($.statement, ';')), optional($.statement)),
 
     // `--` and `//` line comments; Snowflake accepts both spellings.
-    comment: _ => token(choice(/--[^\n]*/, /\/\/[^\n]*/)),
+    comment: (_) => token(choice(/--[^\n]*/, /\/\/[^\n]*/)),
     // The block comment is a plain regex because Snowflake's block
     // comments do NOT nest — the first `*/` closes the comment — unlike
     // T-SQL's, which is why this grammar needs no external scanner for
     // them. (Verified against Snowflake's documentation.)
-    marginalia: _ => token(/\/\*([^*]|\*+[^*/])*\*+\//),
+    marginalia: (_) => token(/\/\*([^*]|\*+[^*/])*\*+\//),
 
     ...keyword_rules,
     ...type_rules,
@@ -104,5 +93,5 @@ export default grammar({
     ...expression_rules,
     ...scripting_rules,
     ...statement_rules,
-  }
+  },
 });
