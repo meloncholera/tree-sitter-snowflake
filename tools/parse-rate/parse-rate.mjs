@@ -58,7 +58,7 @@ export function decode(buf) {
   let zerosEven = 0;
   let zerosOdd = 0;
   for (let i = 0; i < n; i++) {
-    if (buf[i] === 0) (i % 2 === 0 ? zerosEven++ : zerosOdd++);
+    if (buf[i] === 0) i % 2 === 0 ? zerosEven++ : zerosOdd++;
   }
   if (n >= 64 && zerosOdd > n / 3) {
     return ['utf-16le', buf.toString('utf16le')];
@@ -114,10 +114,19 @@ function errorRangesFromXml(xml, starts) {
       const a = attrs.match(new RegExp(`${name}="(\\d+)"`));
       return a ? Number(a[1]) : 0;
     };
-    const node = { tag, srow: num('srow'), scol: num('scol'), erow: num('erow'), ecol: num('ecol') };
+    const node = {
+      tag,
+      srow: num('srow'),
+      scol: num('scol'),
+      erow: num('erow'),
+      ecol: num('ecol'),
+    };
     const insideError = stack.some((s) => s.tag === 'ERROR' || s.tag === 'MISSING');
     if (!insideError && (tag === 'ERROR' || tag === 'MISSING')) {
-      ranges.push([byteOffset(starts, node.srow, node.scol), byteOffset(starts, node.erow, node.ecol)]);
+      ranges.push([
+        byteOffset(starts, node.srow, node.scol),
+        byteOffset(starts, node.erow, node.ecol),
+      ]);
     }
     if (!/\/>$/.test(m[0])) stack.push(node);
   }
@@ -133,7 +142,10 @@ if (isMain) {
   const repoDir = join(fileURLToPath(new URL('../..', import.meta.url)));
   const grammarFlag = argv.indexOf('--grammar');
   const grammarDir = grammarFlag !== -1 ? argv[grammarFlag + 1] : repoDir;
-  const corpusRoot = argv.find((a, i) => i > 0 && !a.startsWith('--') && argv[i - 1] !== '--grammar' && a !== '--json') || argv[0];
+  const corpusRoot =
+    argv.find(
+      (a, i) => i > 0 && !a.startsWith('--') && argv[i - 1] !== '--grammar' && a !== '--json',
+    ) || argv[0];
   if (!corpusRoot || corpusRoot.startsWith('--')) {
     console.error('usage: parse-rate.mjs <corpus-root> [--grammar <dir>] [--json]');
     process.exit(2);
@@ -173,22 +185,33 @@ if (isMain) {
       const nl = chunks[c].indexOf('\n');
       const name = chunks[c].slice(0, nl).replace(/"?>?$/, '');
       const body = chunks[c].slice(nl);
-      const target = batch.find((f) => f.norm === name) || batch.find((f) => name.replace(/\\/g, '/').endsWith(f.norm.replace(/\\/g, '/')));
+      const target =
+        batch.find((f) => f.norm === name) ||
+        batch.find((f) => name.replace(/\\/g, '/').endsWith(f.norm.replace(/\\/g, '/')));
       if (!target) {
-        throw new Error(`parse-rate: could not match XML <source name="${name}"> to a file in this batch`);
+        throw new Error(
+          `parse-rate: could not match XML <source name="${name}"> to a file in this batch`,
+        );
       }
       matched.add(target);
       const starts = lineStarts(target.text);
       const ranges = errorRangesFromXml(body, starts);
       const errorBytes = ranges.reduce((sum, [a, b]) => sum + (b - a), 0);
       const total = Buffer.byteLength(target.text, 'utf8');
-      perFile.push({ file: target.original, bytes: total, errorBytes, hasError: ranges.length > 0 });
+      perFile.push({
+        file: target.original,
+        bytes: total,
+        errorBytes,
+        hasError: ranges.length > 0,
+      });
     }
     // A CLI or grammar-load failure can exit non-zero with empty/truncated
     // stdout while still not throwing above — a batch that silently matched
     // fewer files than it was given is a false pass, not a clean run.
     if (matched.size !== batch.length) {
-      throw new Error(`parse-rate: only matched ${matched.size}/${batch.length} files in batch starting at index ${i} — the CLI likely failed to run (check gcc/CC and the grammar build)`);
+      throw new Error(
+        `parse-rate: only matched ${matched.size}/${batch.length} files in batch starting at index ${i} — the CLI likely failed to run (check gcc/CC and the grammar build)`,
+      );
     }
   }
 
