@@ -10,7 +10,9 @@ const binding = typeof process.versions.bun === "string"
 
 try {
   binding.nodeTypeInfo = JSON.parse(readFileSync(new URL("../../src/node-types.json", import.meta.url), "utf8"));
-} catch { }
+} catch {
+  // The type metadata is optional; the binding works without it.
+}
 
 const queries = [
   ["HIGHLIGHTS_QUERY", `${root}/queries/highlights.scm`],
@@ -26,7 +28,9 @@ for (const [prop, path] of queries) {
       delete binding[prop];
       try {
         binding[prop] = readFileSync(path, "utf8");
-      } catch { }
+      } catch {
+        // A missing query file leaves the property undefined.
+      }
       return binding[prop];
     },
   });

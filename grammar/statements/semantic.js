@@ -1,4 +1,4 @@
-import { comma_list, paren_list, wrapped_in_parenthesis } from "../helpers.js";
+import { paren_list, wrapped_in_parenthesis } from "../helpers.js";
 
 // Snowflake Cortex semantic model views — the semantic-layer DDL:
 //

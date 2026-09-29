@@ -1,4 +1,4 @@
-import { comma_list, paren_list, statement_list } from "../helpers.js";
+import { paren_list, statement_list } from "../helpers.js";
 
 // A `$$` script: `;`-terminated statements, or a single statement with
 // no terminator (the UDF form — the closing delimiter replaces the `;`).

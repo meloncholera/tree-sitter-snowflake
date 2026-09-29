@@ -1,6 +1,6 @@
 // Snowflake session and account administration: USE, SET/UNSET, SHOW,
 // DESCRIBE, CALL, transactions.
-import { comma_list, paren_list, wrapped_in_parenthesis } from "../helpers.js";
+import { comma_list, wrapped_in_parenthesis } from "../helpers.js";
 
 export default {
 

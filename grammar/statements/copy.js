@@ -1,4 +1,4 @@
-import { comma_list, paren_list, stage_reference_or_quoted } from "../helpers.js";
+import { paren_list, stage_reference_or_quoted } from "../helpers.js";
 
 // Snowflake staging and data transfer: COPY INTO in both directions,
 // PUT/GET, LIST, REMOVE.

@@ -39,7 +39,6 @@ src/node-types.json      linguist-generated=true
 .gitattributes           text eol=lf export-ignore linguist-detectable=false
 .gitignore               text eol=lf export-ignore linguist-detectable=false
 .nvmrc                   text eol=lf export-ignore linguist-detectable=false
-CODEOWNERS               text eol=lf export-ignore linguist-detectable=false
 
 # Documentation
 CHANGELOG.md             linguist-generated=true linguist-documentation=true

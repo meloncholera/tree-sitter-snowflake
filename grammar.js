@@ -56,7 +56,7 @@ export default grammar({
     [$.statement, $.dollar_quoted_script],
   ],
 
-  precedences: $ => [
+  precedences: _ => [
     [
       'postfix',
       'unary_sign',

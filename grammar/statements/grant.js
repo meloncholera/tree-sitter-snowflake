@@ -1,4 +1,4 @@
-import { comma_list, paren_list, wrapped_in_parenthesis } from "../helpers.js";
+import { comma_list, wrapped_in_parenthesis } from "../helpers.js";
 
 // Snowflake GRANT and REVOKE, including future grants and role grants.
 // The privilege vocabulary is large and partly non-reserved; the words

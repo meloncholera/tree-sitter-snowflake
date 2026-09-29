@@ -14,6 +14,7 @@
 // global cache (~/.cache/tree-sitter or ~/AppData/Local/tree-sitter)
 // before a differential comparison.
 
+import { Buffer } from 'node:buffer';
 import { spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';

@@ -1,4 +1,4 @@
-import { comma_list, paren_list, wrapped_in_parenthesis } from "../helpers.js";
+import { comma_list, paren_list } from "../helpers.js";
 
 // Snowflake DML: INSERT [OVERWRITE], UPDATE ... FROM, DELETE [USING],
 // MERGE — all may be prefixed by a CTE.
