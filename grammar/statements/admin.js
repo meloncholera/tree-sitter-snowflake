@@ -80,6 +80,18 @@ export default {
       ),
     ),
 
+  // EXPLAIN [USING {TABULAR | JSON | TEXT}] statement — the format word is
+  // an identifier, not a keyword. Only queries and DML are explainable; a
+  // script statement, GRANT, or another EXPLAIN is an error.
+  explain_statement: ($) =>
+    prec.right(
+      seq(
+        $.keyword_explain,
+        optional(seq($.keyword_using, field('format', $.identifier))),
+        field('statement', alias(choice($._dml_read, $._dml_write), $.statement)),
+      ),
+    ),
+
   // COMMENT ON {TABLE | COLUMN | ...} name IS 'text' — the idempotent
   // documentation statement the corpus uses after CREATE TABLE. A column
   // comment names four parts (db.schema.table.column), so the target

@@ -11,4 +11,7 @@ export default {
       comma_list(field('name', $.object_reference), true),
       optional(choice($.keyword_cascade, $.keyword_restrict)),
     ),
+
+  // UNDROP {TABLE | SCHEMA | DATABASE | ...} name
+  undrop_statement: ($) => seq($.keyword_undrop, $.object_kind, field('name', $.object_reference)),
 };
