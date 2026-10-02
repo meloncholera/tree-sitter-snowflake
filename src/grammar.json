@@ -3036,6 +3036,15 @@
             "value": "field"
           },
           {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_prior_field"
+            },
+            "named": true,
+            "value": "field"
+          },
+          {
             "type": "SYMBOL",
             "name": "case"
           },
@@ -3466,6 +3475,23 @@
       "content": {
         "type": "SYMBOL",
         "name": "identifier"
+      }
+    },
+    "_prior_field": {
+      "type": "PREC_DYNAMIC",
+      "value": 1,
+      "content": {
+        "type": "FIELD",
+        "name": "name",
+        "content": {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "keyword_prior"
+          },
+          "named": true,
+          "value": "identifier"
+        }
       }
     },
     "_qualified_field": {
@@ -14017,12 +14043,37 @@
           "name": "keyword_by"
         },
         {
-          "type": "FIELD",
-          "name": "condition",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_expression"
-          }
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "condition",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_expression"
+              }
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": ","
+                  },
+                  {
+                    "type": "FIELD",
+                    "name": "condition",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "_expression"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -19427,6 +19478,10 @@
     [
       "statement",
       "dollar_quoted_script"
+    ],
+    [
+      "_prior_field",
+      "unary_expression"
     ]
   ],
   "precedences": [

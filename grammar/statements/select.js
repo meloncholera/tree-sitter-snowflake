@@ -117,7 +117,8 @@ export default {
 
   start_with: ($) => seq($.keyword_start, $.keyword_with, field('condition', $._expression)),
 
-  connect_by: ($) => seq($.keyword_connect, $.keyword_by, field('condition', $._expression)),
+  connect_by: ($) =>
+    seq($.keyword_connect, $.keyword_by, comma_list(field('condition', $._expression), true)),
 
   where: ($) => seq($.keyword_where, field('predicate', $._expression)),
 

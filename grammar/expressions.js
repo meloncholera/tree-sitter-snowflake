@@ -7,6 +7,7 @@ export default {
       choice(
         $.literal,
         alias($._qualified_field, $.field),
+        alias($._prior_field, $.field),
         $.case,
         $.window_function,
         $.subquery,
@@ -86,6 +87,13 @@ export default {
     ),
 
   field: ($) => field('name', $.identifier),
+
+  // PRIOR is a unary operator inside CONNECT BY but not a reserved word, so
+  // a bare `prior` must still read as a column everywhere an expression
+  // starts. The dynamic precedence makes that reading win whenever both fit
+  // (`SELECT prior FROM t`); the operator reading survives only where a
+  // column cannot be followed by an operand (`CONNECT BY PRIOR id = pid`).
+  _prior_field: ($) => prec.dynamic(1, field('name', alias($.keyword_prior, $.identifier))),
 
   // t.col or col. Snowflake has no parenthesized-qualifier spelling
   // (`(t).col` is PostgreSQL's, not Snowflake's), and allowing one puts a
