@@ -111,7 +111,12 @@ export default {
           ),
           seq(repeat($.table_option), $.keyword_as, $.create_query),
           seq($.keyword_like, $.object_reference),
-          seq($.keyword_clone, $.object_reference, repeat($.table_option)),
+          seq(
+            $.keyword_clone,
+            $.object_reference,
+            optional($._time_travel_clause),
+            repeat($.table_option),
+          ),
         ),
       ),
     ),

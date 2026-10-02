@@ -46,6 +46,9 @@ export default grammar({
     // list or stands as the script's single statement; the trees are
     // identical either way.
     [$.statement, $.dollar_quoted_script],
+    // `prior` — the PRIOR operator vs. a column of that name; settled by
+    // whether an operand follows.
+    [$._prior_field, $.unary_expression],
   ],
 
   precedences: (_) => [

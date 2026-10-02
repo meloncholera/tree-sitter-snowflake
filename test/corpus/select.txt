@@ -574,3 +574,455 @@ ORDER BY C1 DESC NULLS FIRST, C2 NULLS LAST;
           (direction
             (keyword_nulls)
             (keyword_last)))))))
+
+================================================================================
+time travel at offset
+================================================================================
+
+SELECT * FROM t1 AT (OFFSET => -60);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (time_travel
+          (keyword_at)
+          (named_argument
+            (identifier)
+            (unary_expression
+              (literal))))))))
+
+================================================================================
+time travel at timestamp with alias
+================================================================================
+
+SELECT * FROM t1 AT (TIMESTAMP => '2024-01-01'::TIMESTAMP) AS x WHERE x.a = 1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (time_travel
+          (keyword_at)
+          (named_argument
+            (identifier)
+            (cast_expression
+              (literal
+                (literal))
+              (timestamp
+                (keyword_timestamp)))))
+        (keyword_as)
+        (identifier))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (literal))))))
+
+================================================================================
+time travel before statement
+================================================================================
+
+SELECT * FROM t1 BEFORE (STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (time_travel
+          (keyword_before)
+          (named_argument
+            (identifier)
+            (literal
+              (literal))))))))
+
+================================================================================
+changes clause with at
+================================================================================
+
+SELECT * FROM t1 CHANGES (INFORMATION => DEFAULT) AT (TIMESTAMP => '2024-01-01'::TIMESTAMP);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (changes_clause
+          (keyword_changes)
+          (named_argument
+            (identifier)
+            (field
+              (identifier)))
+          (time_travel
+            (keyword_at)
+            (named_argument
+              (identifier)
+              (cast_expression
+                (literal
+                  (literal))
+                (timestamp
+                  (keyword_timestamp))))))))))
+
+================================================================================
+changes clause with end
+================================================================================
+
+SELECT * FROM t1 CHANGES (INFORMATION => APPEND_ONLY) AT (OFFSET => -60) END (OFFSET => -30);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (changes_clause
+          (keyword_changes)
+          (named_argument
+            (identifier)
+            (field
+              (identifier)))
+          (time_travel
+            (keyword_at)
+            (named_argument
+              (identifier)
+              (unary_expression
+                (literal))))
+          (keyword_end)
+          (named_argument
+            (identifier)
+            (unary_expression
+              (literal))))))))
+
+================================================================================
+clone with time travel
+================================================================================
+
+CREATE TABLE t2 CLONE t1 AT (OFFSET => -3600);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (keyword_clone)
+      (object_reference
+        (identifier))
+      (time_travel
+        (keyword_at)
+        (named_argument
+          (identifier)
+          (unary_expression
+            (literal)))))))
+
+================================================================================
+connect by before start with
+================================================================================
+
+SELECT a FROM t CONNECT BY PRIOR id = parent_id START WITH parent_id IS NULL;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (hierarchy
+        (connect_by
+          (keyword_connect)
+          (keyword_by)
+          (binary_expression
+            (unary_expression
+              (keyword_prior)
+              (field
+                (identifier)))
+            (field
+              (identifier))))
+        (start_with
+          (keyword_start)
+          (keyword_with)
+          (binary_expression
+            (field
+              (identifier))
+            (keyword_is)
+            (literal
+              (keyword_null))))))))
+
+================================================================================
+start with before connect by
+================================================================================
+
+SELECT a FROM t START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id ORDER BY a;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (hierarchy
+        (start_with
+          (keyword_start)
+          (keyword_with)
+          (binary_expression
+            (field
+              (identifier))
+            (keyword_is)
+            (literal
+              (keyword_null))))
+        (connect_by
+          (keyword_connect)
+          (keyword_by)
+          (binary_expression
+            (unary_expression
+              (keyword_prior)
+              (field
+                (identifier)))
+            (field
+              (identifier)))))
+      (order_by
+        (keyword_order)
+        (keyword_by)
+        (order_target
+          (field
+            (identifier)))))))
+
+================================================================================
+where then hierarchy
+================================================================================
+
+SELECT a FROM t WHERE a > 1 START WITH id = 1 CONNECT BY parent_id = PRIOR id;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (hierarchy
+        (start_with
+          (keyword_start)
+          (keyword_with)
+          (binary_expression
+            (field
+              (identifier))
+            (literal)))
+        (connect_by
+          (keyword_connect)
+          (keyword_by)
+          (binary_expression
+            (field
+              (identifier))
+            (unary_expression
+              (keyword_prior)
+              (field
+                (identifier)))))))))
+
+================================================================================
+connect by with multiple conditions
+================================================================================
+
+SELECT a FROM t START WITH id = 1 CONNECT BY PRIOR id = parent_id, PRIOR b = c;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (hierarchy
+        (start_with
+          (keyword_start)
+          (keyword_with)
+          (binary_expression
+            (field
+              (identifier))
+            (literal)))
+        (connect_by
+          (keyword_connect)
+          (keyword_by)
+          (binary_expression
+            (unary_expression
+              (keyword_prior)
+              (field
+                (identifier)))
+            (field
+              (identifier)))
+          (binary_expression
+            (unary_expression
+              (keyword_prior)
+              (field
+                (identifier)))
+            (field
+              (identifier))))))))
+
+================================================================================
+connect by with prior on the right and a compound condition
+================================================================================
+
+SELECT a FROM t CONNECT BY parent_id = PRIOR id AND level < 3;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (hierarchy
+        (connect_by
+          (keyword_connect)
+          (keyword_by)
+          (binary_expression
+            (binary_expression
+              (field
+                (identifier))
+              (unary_expression
+                (keyword_prior)
+                (field
+                  (identifier))))
+            (keyword_and)
+            (binary_expression
+              (field
+                (identifier))
+              (literal))))))))
+
+================================================================================
+prior as a column name
+================================================================================
+
+SELECT prior, b FROM t WHERE prior = 1 ORDER BY prior;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (order_by
+        (keyword_order)
+        (keyword_by)
+        (order_target
+          (field
+            (identifier)))))))

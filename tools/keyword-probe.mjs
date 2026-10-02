@@ -12,8 +12,8 @@
 //   2. Clause and function keywords that REQUIRE more tokens after them
 //      (LIMIT n, PIVOT (...), EXCEPT <query>, MATCH_RECOGNIZE (...),
 //      WINDOW w AS (...), TOP n, EXTRACT(...), IDENTIFIER(...),
-//      INTERVAL 'n' DAY). Snowflake itself rejects these words bare in
-//      the slot, so the grammar erroring is faithful behavior; the corpus
+//      INTERVAL 'n' DAY, AT/BEFORE/CHANGES (...) after a table).
+//      Snowflake itself rejects these words bare in the slot, so the grammar erroring is faithful behavior; the corpus
 //      has been grepped and none is used as a bare column or alias.
 //
 // Anything else failing is a regression: a new keyword is eating an
@@ -54,6 +54,9 @@ const clauseKeywords = new Set([
   'identifier',
   'interval',
   'top',
+  'at',
+  'before',
+  'changes',
 ]);
 
 const scratch = join(os.tmpdir(), 'kwprobe-' + process.pid);
