@@ -100,6 +100,7 @@ export default {
       comma_list($.relation, true),
       repeat(choice($.join, $.cross_join, $.pivot_clause, $.unpivot_clause, $.match_recognize)),
       optional($.where),
+      optional($.hierarchy),
       optional($.group_by),
       optional($.having),
       optional($.qualify),
@@ -107,6 +108,16 @@ export default {
       optional($.order_by),
       optional($.limit),
     ),
+
+  // Hierarchical query: START WITH and CONNECT BY, in either order when
+  // START WITH is present. PRIOR in the CONNECT BY condition is a unary
+  // operator (see unary_expression).
+  hierarchy: ($) =>
+    choice(seq($.start_with, $.connect_by), seq($.connect_by, optional($.start_with))),
+
+  start_with: ($) => seq($.keyword_start, $.keyword_with, field('condition', $._expression)),
+
+  connect_by: ($) => seq($.keyword_connect, $.keyword_by, field('condition', $._expression)),
 
   where: ($) => seq($.keyword_where, field('predicate', $._expression)),
 
@@ -217,7 +228,7 @@ export default {
         choice(
           $.subquery,
           $.invocation,
-          $.object_reference,
+          seq($.object_reference, optional($._time_travel_clause)),
           seq(optional($.keyword_lateral), choice($.subquery, $.invocation)),
           $.values,
           wrapped_in_parenthesis($.values),
@@ -226,6 +237,22 @@ export default {
         ),
         optional(seq($._alias, optional(alias($._column_list, $.list)))),
       ),
+    ),
+
+  // Time Travel and change tracking on a table reference:
+  //   AT | BEFORE (TIMESTAMP | OFFSET | STATEMENT | STREAM => expr)
+  //   CHANGES (INFORMATION => DEFAULT | APPEND_ONLY) AT | BEFORE (...) [END (...)]
+  _time_travel_clause: ($) => choice($.time_travel, $.changes_clause),
+
+  time_travel: ($) =>
+    seq(choice($.keyword_at, $.keyword_before), wrapped_in_parenthesis($.named_argument)),
+
+  changes_clause: ($) =>
+    seq(
+      $.keyword_changes,
+      wrapped_in_parenthesis($.named_argument),
+      $.time_travel,
+      optional(seq($.keyword_end, wrapped_in_parenthesis($.named_argument))),
     ),
 
   // @stage/path [(FILE_FORMAT => 'CSV' [, ...])] — querying a staged file

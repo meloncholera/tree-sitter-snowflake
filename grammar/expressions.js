@@ -259,6 +259,7 @@ export default {
     choice(
       ...[
         [$.keyword_not, 'unary_not'],
+        [$.keyword_prior, 'unary_sign'],
         ['-', 'unary_sign'],
         ['+', 'unary_sign'],
       ].map(([operator, precedence]) =>

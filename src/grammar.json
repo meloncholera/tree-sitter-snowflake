@@ -1028,6 +1028,26 @@
       "type": "PATTERN",
       "value": "[sS][tT][aA][rR][tT]"
     },
+    "keyword_connect": {
+      "type": "PATTERN",
+      "value": "[cC][oO][nN][nN][eE][cC][tT]"
+    },
+    "keyword_prior": {
+      "type": "PATTERN",
+      "value": "[pP][rR][iI][oO][rR]"
+    },
+    "keyword_at": {
+      "type": "PATTERN",
+      "value": "[aA][tT]"
+    },
+    "keyword_before": {
+      "type": "PATTERN",
+      "value": "[bB][eE][fF][oO][rR][eE]"
+    },
+    "keyword_changes": {
+      "type": "PATTERN",
+      "value": "[cC][hH][aA][nN][gG][eE][sS]"
+    },
     "keyword_increment": {
       "type": "PATTERN",
       "value": "[iI][nN][cC][rR][eE][mM][eE][nN][tT]"
@@ -5123,6 +5143,31 @@
                 "type": "FIELD",
                 "name": "operator",
                 "content": {
+                  "type": "SYMBOL",
+                  "name": "keyword_prior"
+                }
+              },
+              {
+                "type": "FIELD",
+                "name": "operand",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_expression"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "PREC_LEFT",
+          "value": "unary_sign",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "operator",
+                "content": {
                   "type": "STRING",
                   "value": "-"
                 }
@@ -7844,6 +7889,18 @@
                   {
                     "type": "SYMBOL",
                     "name": "object_reference"
+                  },
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "_time_travel_clause"
+                      },
+                      {
+                        "type": "BLANK"
+                      }
+                    ]
                   },
                   {
                     "type": "REPEAT",
@@ -13807,6 +13864,18 @@
           "members": [
             {
               "type": "SYMBOL",
+              "name": "hierarchy"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
               "name": "group_by"
             },
             {
@@ -13873,6 +13942,87 @@
               "type": "BLANK"
             }
           ]
+        }
+      ]
+    },
+    "hierarchy": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "start_with"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "connect_by"
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "connect_by"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "start_with"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "start_with": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "keyword_start"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "keyword_with"
+        },
+        {
+          "type": "FIELD",
+          "name": "condition",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_expression"
+          }
+        }
+      ]
+    },
+    "connect_by": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "keyword_connect"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "keyword_by"
+        },
+        {
+          "type": "FIELD",
+          "name": "condition",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_expression"
+          }
         }
       ]
     },
@@ -14711,8 +14861,25 @@
                 "name": "invocation"
               },
               {
-                "type": "SYMBOL",
-                "name": "object_reference"
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "object_reference"
+                  },
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "_time_travel_clause"
+                      },
+                      {
+                        "type": "BLANK"
+                      }
+                    ]
+                  }
+                ]
               },
               {
                 "type": "SEQ",
@@ -14833,6 +15000,118 @@
           }
         ]
       }
+    },
+    "_time_travel_clause": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "time_travel"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "changes_clause"
+        }
+      ]
+    },
+    "time_travel": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "keyword_at"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "keyword_before"
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "("
+            },
+            {
+              "type": "SYMBOL",
+              "name": "named_argument"
+            },
+            {
+              "type": "STRING",
+              "value": ")"
+            }
+          ]
+        }
+      ]
+    },
+    "changes_clause": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "keyword_changes"
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "("
+            },
+            {
+              "type": "SYMBOL",
+              "name": "named_argument"
+            },
+            {
+              "type": "STRING",
+              "value": ")"
+            }
+          ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "time_travel"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "keyword_end"
+                },
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": "("
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "named_argument"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": ")"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
     },
     "stage_source": {
       "type": "PREC_RIGHT",
