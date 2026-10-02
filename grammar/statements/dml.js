@@ -27,17 +27,46 @@ export default {
     ),
 
   // INSERT [OVERWRITE] INTO t [(cols)] { VALUES (...) | query }
+  // INSERT [OVERWRITE] { ALL | FIRST } — the multi-table form, below.
   insert_statement: ($) =>
     prec.right(
       seq(
         $.keyword_insert,
         optional($.keyword_overwrite),
+        choice(
+          seq(
+            $.keyword_into,
+            field('table', $.object_reference),
+            optional(paren_list($.identifier, true)),
+            choice($.values, alias($._dml_read, $.statement)),
+          ),
+          seq(
+            choice($.keyword_all, $.keyword_first),
+            choice(repeat1($.insert_into), seq(repeat1($.insert_when), optional($.insert_else))),
+            alias($._dml_read, $.statement),
+          ),
+        ),
+      ),
+    ),
+
+  // INTO t [(cols)] [VALUES (...)] — one branch of a multi-table insert.
+  // prec.right: a `(` after the table is its column list, not the start of
+  // the trailing parenthesized query.
+  insert_into: ($) =>
+    prec.right(
+      seq(
         $.keyword_into,
         field('table', $.object_reference),
         optional(paren_list($.identifier, true)),
-        choice($.values, alias($._dml_read, $.statement)),
+        optional(seq($.keyword_values, $.list)),
       ),
     ),
+
+  // WHEN condition THEN INTO ... [INTO ...]
+  insert_when: ($) =>
+    seq($.keyword_when, field('condition', $._expression), $.keyword_then, repeat1($.insert_into)),
+
+  insert_else: ($) => seq($.keyword_else, repeat1($.insert_into)),
 
   // UPDATE t SET col = expr [, ...] [FROM ...] [WHERE ...]
   // A single WHERE home after the optional FROM tail — putting it inside

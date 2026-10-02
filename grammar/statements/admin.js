@@ -80,6 +80,17 @@ export default {
       ),
     ),
 
+  // EXPLAIN [USING {TABULAR | JSON | TEXT}] statement — the format word is
+  // an identifier, not a keyword.
+  explain_statement: ($) =>
+    prec.right(
+      seq(
+        $.keyword_explain,
+        optional(seq($.keyword_using, field('format', $.identifier))),
+        field('statement', $.statement),
+      ),
+    ),
+
   // COMMENT ON {TABLE | COLUMN | ...} name IS 'text' — the idempotent
   // documentation statement the corpus uses after CREATE TABLE. A column
   // comment names four parts (db.schema.table.column), so the target

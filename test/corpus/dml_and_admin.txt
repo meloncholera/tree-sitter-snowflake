@@ -759,3 +759,365 @@ TRUNCATE IF EXISTS DB1.S2.T2;
         (identifier)
         (identifier)
         (identifier)))))
+
+================================================================================
+insert all unconditional
+================================================================================
+
+INSERT ALL INTO t1 VALUES (a) INTO t2 VALUES (a) SELECT a FROM src;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert_statement
+      (keyword_insert)
+      (keyword_all)
+      (insert_into
+        (keyword_into)
+        (object_reference
+          (identifier))
+        (keyword_values)
+        (list
+          (field
+            (identifier))))
+      (insert_into
+        (keyword_into)
+        (object_reference
+          (identifier))
+        (keyword_values)
+        (list
+          (field
+            (identifier))))
+      (statement
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              (field
+                (identifier)))))
+        (from
+          (keyword_from)
+          (relation
+            (object_reference
+              (identifier))))))))
+
+================================================================================
+insert overwrite all with column lists
+================================================================================
+
+INSERT OVERWRITE ALL INTO t1 (a, b) VALUES (x, y) INTO t2 SELECT x, y FROM src;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert_statement
+      (keyword_insert)
+      (keyword_overwrite)
+      (keyword_all)
+      (insert_into
+        (keyword_into)
+        (object_reference
+          (identifier))
+        (identifier)
+        (identifier)
+        (keyword_values)
+        (list
+          (field
+            (identifier))
+          (field
+            (identifier))))
+      (insert_into
+        (keyword_into)
+        (object_reference
+          (identifier)))
+      (statement
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              (field
+                (identifier)))
+            (term
+              (field
+                (identifier)))))
+        (from
+          (keyword_from)
+          (relation
+            (object_reference
+              (identifier))))))))
+
+================================================================================
+insert first conditional with else
+================================================================================
+
+INSERT FIRST WHEN a > 10 THEN INTO t1 VALUES (a) INTO t2 VALUES (a) WHEN a > 5 THEN INTO t3 (c) VALUES (a) ELSE INTO t4 VALUES (a) SELECT a FROM src;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert_statement
+      (keyword_insert)
+      (keyword_first)
+      (insert_when
+        (keyword_when)
+        (binary_expression
+          (field
+            (identifier))
+          (literal))
+        (keyword_then)
+        (insert_into
+          (keyword_into)
+          (object_reference
+            (identifier))
+          (keyword_values)
+          (list
+            (field
+              (identifier))))
+        (insert_into
+          (keyword_into)
+          (object_reference
+            (identifier))
+          (keyword_values)
+          (list
+            (field
+              (identifier)))))
+      (insert_when
+        (keyword_when)
+        (binary_expression
+          (field
+            (identifier))
+          (literal))
+        (keyword_then)
+        (insert_into
+          (keyword_into)
+          (object_reference
+            (identifier))
+          (identifier)
+          (keyword_values)
+          (list
+            (field
+              (identifier)))))
+      (insert_else
+        (keyword_else)
+        (insert_into
+          (keyword_into)
+          (object_reference
+            (identifier))
+          (keyword_values)
+          (list
+            (field
+              (identifier)))))
+      (statement
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              (field
+                (identifier)))))
+        (from
+          (keyword_from)
+          (relation
+            (object_reference
+              (identifier))))))))
+
+================================================================================
+insert all conditional without else
+================================================================================
+
+INSERT ALL WHEN a > 1 THEN INTO t1 INTO t2 SELECT a FROM src;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert_statement
+      (keyword_insert)
+      (keyword_all)
+      (insert_when
+        (keyword_when)
+        (binary_expression
+          (field
+            (identifier))
+          (literal))
+        (keyword_then)
+        (insert_into
+          (keyword_into)
+          (object_reference
+            (identifier)))
+        (insert_into
+          (keyword_into)
+          (object_reference
+            (identifier))))
+      (statement
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              (field
+                (identifier)))))
+        (from
+          (keyword_from)
+          (relation
+            (object_reference
+              (identifier))))))))
+
+================================================================================
+insert all with parenthesized query
+================================================================================
+
+INSERT ALL INTO t1 (a) (SELECT a FROM src);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert_statement
+      (keyword_insert)
+      (keyword_all)
+      (insert_into
+        (keyword_into)
+        (object_reference
+          (identifier))
+        (identifier))
+      (statement
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              (field
+                (identifier)))))
+        (from
+          (keyword_from)
+          (relation
+            (object_reference
+              (identifier))))))))
+
+================================================================================
+explain a query
+================================================================================
+
+EXPLAIN SELECT * FROM t1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (explain_statement
+      (keyword_explain)
+      (statement
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              (all_fields))))
+        (from
+          (keyword_from)
+          (relation
+            (object_reference
+              (identifier))))))))
+
+================================================================================
+explain using json
+================================================================================
+
+EXPLAIN USING JSON SELECT a FROM t1 WHERE a > 1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (explain_statement
+      (keyword_explain)
+      (keyword_using)
+      (identifier)
+      (statement
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              (field
+                (identifier)))))
+        (from
+          (keyword_from)
+          (relation
+            (object_reference
+              (identifier)))
+          (where
+            (keyword_where)
+            (binary_expression
+              (field
+                (identifier))
+              (literal))))))))
+
+================================================================================
+explain using tabular an insert
+================================================================================
+
+EXPLAIN USING TABULAR INSERT INTO t (a) VALUES (1);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (explain_statement
+      (keyword_explain)
+      (keyword_using)
+      (identifier)
+      (statement
+        (insert_statement
+          (keyword_insert)
+          (keyword_into)
+          (object_reference
+            (identifier))
+          (identifier)
+          (values
+            (keyword_values)
+            (list
+              (literal))))))))
+
+================================================================================
+undrop table
+================================================================================
+
+UNDROP TABLE t1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (undrop_statement
+      (keyword_undrop)
+      (object_kind
+        (keyword_table))
+      (object_reference
+        (identifier)))))
+
+================================================================================
+undrop schema and database
+================================================================================
+
+UNDROP SCHEMA db.s;
+
+UNDROP DATABASE d;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (undrop_statement
+      (keyword_undrop)
+      (object_kind
+        (keyword_schema))
+      (object_reference
+        (identifier)
+        (identifier))))
+  (statement
+    (undrop_statement
+      (keyword_undrop)
+      (object_kind
+        (keyword_database))
+      (object_reference
+        (identifier)))))

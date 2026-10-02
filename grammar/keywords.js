@@ -12,6 +12,8 @@ export default {
   keyword_select: (_) => make_keyword('select'),
   keyword_delete: (_) => make_keyword('delete'),
   keyword_insert: (_) => make_keyword('insert'),
+  keyword_explain: (_) => make_keyword('explain'),
+  keyword_undrop: (_) => make_keyword('undrop'),
   keyword_update: (_) => make_keyword('update'),
   keyword_merge: (_) => make_keyword('merge'),
   keyword_into: (_) => make_keyword('into'),
