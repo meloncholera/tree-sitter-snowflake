@@ -81,13 +81,14 @@ export default {
     ),
 
   // EXPLAIN [USING {TABULAR | JSON | TEXT}] statement — the format word is
-  // an identifier, not a keyword.
+  // an identifier, not a keyword. Only queries and DML are explainable; a
+  // script statement, GRANT, or another EXPLAIN is an error.
   explain_statement: ($) =>
     prec.right(
       seq(
         $.keyword_explain,
         optional(seq($.keyword_using, field('format', $.identifier))),
-        field('statement', $.statement),
+        field('statement', alias(choice($._dml_read, $._dml_write), $.statement)),
       ),
     ),
 

@@ -18663,8 +18663,22 @@
             "type": "FIELD",
             "name": "statement",
             "content": {
-              "type": "SYMBOL",
-              "name": "statement"
+              "type": "ALIAS",
+              "content": {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_dml_read"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_dml_write"
+                  }
+                ]
+              },
+              "named": true,
+              "value": "statement"
             }
           }
         ]

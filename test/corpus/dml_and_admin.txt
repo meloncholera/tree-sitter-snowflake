@@ -1121,3 +1121,106 @@ UNDROP DATABASE d;
         (keyword_database))
       (object_reference
         (identifier)))))
+
+================================================================================
+explain a cte query and a write
+================================================================================
+
+EXPLAIN USING JSON WITH c AS (SELECT 1) SELECT * FROM c;
+
+EXPLAIN UPDATE t SET a = 1;
+
+EXPLAIN INSERT ALL INTO t1 SELECT 1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (explain_statement
+      (keyword_explain)
+      (keyword_using)
+      (identifier)
+      (statement
+        (keyword_with)
+        (cte
+          (identifier)
+          (keyword_as)
+          (statement
+            (select
+              (keyword_select)
+              (select_expression
+                (term
+                  (literal))))))
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              (all_fields))))
+        (from
+          (keyword_from)
+          (relation
+            (object_reference
+              (identifier)))))))
+  (statement
+    (explain_statement
+      (keyword_explain)
+      (statement
+        (update_statement
+          (keyword_update)
+          (object_reference
+            (identifier))
+          (keyword_set)
+          (assignment
+            (field
+              (identifier))
+            (literal))))))
+  (statement
+    (explain_statement
+      (keyword_explain)
+      (statement
+        (insert_statement
+          (keyword_insert)
+          (keyword_all)
+          (insert_into
+            (keyword_into)
+            (object_reference
+              (identifier)))
+          (statement
+            (select
+              (keyword_select)
+              (select_expression
+                (term
+                  (literal))))))))))
+
+================================================================================
+explain rejects a script statement
+:error
+================================================================================
+
+EXPLAIN BEGIN SELECT 1; END;
+
+--------------------------------------------------------------------------------
+
+
+
+================================================================================
+explain rejects another explain
+:error
+================================================================================
+
+EXPLAIN EXPLAIN SELECT 1;
+
+--------------------------------------------------------------------------------
+
+
+
+================================================================================
+explain rejects a grant
+:error
+================================================================================
+
+EXPLAIN GRANT ROLE r TO USER u;
+
+--------------------------------------------------------------------------------
+
+
