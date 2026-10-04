@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0](https://github.com/meloncholera/tree-sitter-snowflake/compare/v0.1.1...v0.2.0) - 2026-10-04
+
+### Added
+
+- *(grammar)* parse EXPLAIN, UNDROP, and multi-table INSERT ([#35](https://github.com/meloncholera/tree-sitter-snowflake/pull/35))
+- *(grammar)* parse Time Travel, CHANGES, and CONNECT BY clauses ([#34](https://github.com/meloncholera/tree-sitter-snowflake/pull/34))
+
+### Fixed
+
+- *(release)* point repository metadata and package scope at meloncholera ([#30](https://github.com/meloncholera/tree-sitter-snowflake/pull/30))
+- *(tools)* validate batch exit status and per-file match count in parse-rate ([#26](https://github.com/meloncholera/tree-sitter-snowflake/pull/26))
+- *(snowflake-bodies)* make rule IDs a compile-time check and close test gaps
+- *(linguist)* mark generated grammar JSON as linguist-generated ([#24](https://github.com/meloncholera/tree-sitter-snowflake/pull/24))
+- *(tooling)* hash the leak guard's needle list and fix CI cost and correctness gaps
+- *(grammar)* [**breaking**] correct operator precedence, quoted stage paths, and grammar duplication
+- *(release)* send a User-Agent header on the crates.io publish check ([#20](https://github.com/meloncholera/tree-sitter-snowflake/pull/20))
+
+### Other
+
+- *(deps)* update eslint and node-gyp ([#36](https://github.com/meloncholera/tree-sitter-snowflake/pull/36))
+- *(deps)* bump cargo-bins/cargo-binstall from 1.23.0 to 1.24.0 in the github-actions group ([#33](https://github.com/meloncholera/tree-sitter-snowflake/pull/33))
+- align repo configuration with the shared grammar standard ([#32](https://github.com/meloncholera/tree-sitter-snowflake/pull/32))
+- sync dev from main ([#19](https://github.com/meloncholera/tree-sitter-snowflake/pull/19))
+- *(deps)* bump actions/upload-artifact
+
 ## [0.1.1](https://github.com/meloncholic/tree-sitter-snowflake/compare/v0.1.0...v0.1.1) - 2026-09-26
 
 ### Fixed
