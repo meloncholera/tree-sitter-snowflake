@@ -1,3 +1,45 @@
+# =============================================================================
+#  tree-sitter-snowflake · GitHub Actions
+# -----------------------------------------------------------------------------
+#  File                release.yml
+#  Workflow name       Release
+#  Type                Entrypoint (runs in this repo only)
+#  Triggers            push (tags: v*)
+#                      workflow_dispatch (tag input)
+#  Purpose             Publishes the crate to crates.io and the npm package
+#                      to the public npm registry and to GitHub Packages for
+#                      the given tag, then creates the corresponding GitHub
+#                      Release. The tag must point at a commit on main whose
+#                      Cargo.toml version matches it; the release policy
+#                      script validates that before anything is published.
+#                      GitHub Packages requires an npm package name scoped to
+#                      the repository owner, so that job publishes under
+#                      @<owner>/tree-sitter-snowflake in its own short-lived
+#                      checkout only; the public npm package stays unscoped.
+#                      Prebuilt native addons (Linux and Windows, Node-API)
+#                      are built by the prebuild matrix job and published
+#                      inside the npm and GitHub Packages tarballs, so an
+#                      install on those platforms needs no C toolchain;
+#                      node-gyp-build prefers a matching prebuild over a
+#                      source build. A WASM build is attached to the GitHub
+#                      Release for web-tree-sitter consumers, along with
+#                      test/node-kinds.txt and versions.json as the node-kind
+#                      stability surface (only the files the checkout has —
+#                      an older tag re-dispatched by hand can predate them).
+#
+#                      The workflow_dispatch trigger exists because
+#                      release-tag.yml pushes the tag using GITHUB_TOKEN, and
+#                      GitHub never fires further workflow runs off a
+#                      GITHUB_TOKEN-authored push; release-tag.yml dispatches
+#                      this workflow with the tag it just pushed instead.
+#
+#                      Package versions (package.json, tree-sitter.json) are
+#                      set from the tag at publish time in the working tree
+#                      only, never committed back. Every publish step is safe
+#                      to repeat: it checks whether the version is already
+#                      live before publishing.
+# =============================================================================
+
 name: Release
 
 on:
@@ -14,6 +56,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  TREE_SITTER_CLI_VERSION: '0.27.0'
   PREBUILDIFY_VERSION: '6.0.1'
 
 permissions:
@@ -92,7 +135,7 @@ jobs:
       - name: Install dependencies
         # node-addon-api is a runtime dependency binding.gyp resolves at gyp
         # configure time (`require('node-addon-api').targets`); prebuildify
-        # only installs itself into npx's own short-lived cache, which that
+        # only installs itself into npx's own temporary cache, which that
         # require can't see. --ignore-scripts skips this package's own
         # "install": "node-gyp-build" script, which would otherwise try (and
         # fail, since there's nothing built yet) to load the addon.
@@ -113,6 +156,8 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+    outputs:
+      file: ${{ steps.wasm.outputs.file }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -123,17 +168,23 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24.x'
-      - name: Install the tree-sitter CLI
-        run: |
-          npm ci --ignore-scripts
-          npm rebuild tree-sitter-cli
       - name: Build the WASM grammar
-        run: npx --no-install tree-sitter build --wasm
+        run: npx --yes --package=tree-sitter-cli@${{ env.TREE_SITTER_CLI_VERSION }} -- tree-sitter build --wasm
+      - name: Locate the WASM build
+        id: wasm
+        # The CLI names its output after the grammar's `name` in
+        # tree-sitter.json, which need not match the package name.
+        run: |
+          set -euo pipefail
+          name=$(node -p 'require("./tree-sitter.json").grammars[0].name')
+          file="tree-sitter-${name}.wasm"
+          test -f "$file"
+          echo "file=$file" >> "$GITHUB_OUTPUT"
       - name: Upload the WASM build
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: wasm-build
-          path: tree-sitter-snowflake.wasm
+          path: ${{ steps.wasm.outputs.file }}
           if-no-files-found: error
 
   publish-crate:
@@ -161,7 +212,7 @@ jobs:
         run: |
           set -euo pipefail
           version="${TAG#v}"
-          status=$(curl -s -o /dev/null -w '%{http_code}' -A "tree-sitter-snowflake-release (meloncholera/tree-sitter-snowflake)" "https://crates.io/api/v1/crates/tree-sitter-snowflake/${version}")
+          status=$(curl -s -o /dev/null -w '%{http_code}' -A "tree-sitter-snowflake-release (${GITHUB_REPOSITORY})" "https://crates.io/api/v1/crates/tree-sitter-snowflake/${version}")
           if [ "$status" = "200" ]; then
             echo "tree-sitter-snowflake@${version} is already published, skipping"
           elif [ "$status" = "404" ]; then
@@ -174,11 +225,10 @@ jobs:
   publish-npm:
     name: Publish to npm
     needs: [verify, prebuild]
-    # A prebuild failure on one platform isn't fatal: node-gyp-build falls
-    # back to a source build for a platform with no matching prebuild.
-    # Waiting for `prebuild` to finish, without requiring every leg to
-    # succeed, keeps that fallback available instead of blocking the whole
-    # publish on one platform's toolchain problem.
+    # A prebuild failure on one platform is not fatal: node-gyp-build falls
+    # back to a source build where no matching prebuild exists. Waiting for
+    # `prebuild` without hard-requiring every leg keeps that fallback instead
+    # of blocking the publish on one platform's toolchain problem.
     if: ${{ !cancelled() && needs.verify.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -233,11 +283,10 @@ jobs:
   publish-github-packages:
     name: Publish to GitHub Packages
     needs: [verify, prebuild]
-    # A prebuild failure on one platform isn't fatal: node-gyp-build falls
-    # back to a source build for a platform with no matching prebuild.
-    # Waiting for `prebuild` to finish, without requiring every leg to
-    # succeed, keeps that fallback available instead of blocking the whole
-    # publish on one platform's toolchain problem.
+    # A prebuild failure on one platform is not fatal: node-gyp-build falls
+    # back to a source build where no matching prebuild exists. Waiting for
+    # `prebuild` without hard-requiring every leg keeps that fallback instead
+    # of blocking the publish on one platform's toolchain problem.
     if: ${{ !cancelled() && needs.verify.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -295,9 +344,9 @@ jobs:
   github-release:
     name: Create GitHub Release
     needs: [verify, publish-crate, publish-npm, publish-github-packages, build-wasm]
-    # The release itself doesn't depend on the WASM build succeeding: a
-    # WASM toolchain problem shouldn't block release creation once every
-    # registry is already live. Only the three publish jobs are required.
+    # The release does not depend on the WASM build succeeding: a build-wasm
+    # failure should not block release creation once every registry is live.
+    # Only the three publish jobs are hard-required.
     if: ${{ !cancelled() && needs.publish-crate.result == 'success' && needs.publish-npm.result == 'success' && needs.publish-github-packages.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -328,4 +377,23 @@ jobs:
         if: needs.build-wasm.result == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$TAG" tree-sitter-snowflake.wasm --clobber
+          WASM_FILE: ${{ needs.build-wasm.outputs.file }}
+        run: |
+          set -euo pipefail
+          gh release upload "$TAG" "$WASM_FILE" --clobber
+
+      - name: Attach the node-kind stability surface
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # A manual re-dispatch can target a tag cut before these files
+          # existed; upload only what the checkout has, so a recovery run
+          # against an old tag does not fail the whole job.
+          assets=()
+          for f in test/node-kinds.txt versions.json; do
+            [ -f "$f" ] && assets+=("$f")
+          done
+          if [ "${#assets[@]}" -gt 0 ]; then
+            gh release upload "$TAG" "${assets[@]}" --clobber
+          fi
