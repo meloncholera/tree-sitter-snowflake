@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1](https://github.com/meloncholera/tree-sitter-snowflake/compare/v0.2.0...v0.2.1) - 2026-10-04
+
+### Other
+
+- *(release)* align the release workflows with the shared grammar repository standard ([#39](https://github.com/meloncholera/tree-sitter-snowflake/pull/39))
+
 ## [0.2.0](https://github.com/meloncholera/tree-sitter-snowflake/compare/v0.1.1...v0.2.0) - 2026-10-04
 
 ### Added
