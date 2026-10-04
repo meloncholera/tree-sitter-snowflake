@@ -9,8 +9,9 @@
 #                      workflow_dispatch
 #  Purpose             Regenerate the parser from grammar.js, fail on any
 #                      drift in the generated parser or the committed
-#                      node-kind snapshot, run the tree-sitter corpus and
-#                      highlight tests, parse every fixture and fail on any
+#                      node-kind snapshot, lint and format-check the
+#                      grammar and tooling JavaScript, run the tree-sitter
+#                      corpus and highlight tests, parse every fixture and fail on any
 #                      ERROR/MISSING/zero-width node, assert the fixtures
 #                      carry no source-corpus identifiers, probe both
 #                      identifier slots for every keyword, build and test
@@ -251,6 +252,12 @@ jobs:
           git ls-files --error-unmatch test/node-kinds.txt
           node tools/node-kinds.mjs > test/node-kinds.txt
           git diff --exit-code -- test/node-kinds.txt
+
+      - name: Lint the grammar and tooling JS
+        run: npm run lint
+
+      - name: Check formatting of the grammar and tooling JS
+        run: npm run format:check
 
       - name: Run corpus and highlight tests
         run: npx --no-install tree-sitter test

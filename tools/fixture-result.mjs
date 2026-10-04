@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 // Strips ANSI color codes from `tree-sitter parse`'s terminal output.
 export function stripAnsi(text) {
-  return text.replace(/\u001b\[[0-9;]*m/g, '');
+  return text.replace(new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g'), '');
 }
 
 // Finds the locally installed tree-sitter CLI binary, checked under each

@@ -35,6 +35,7 @@ case_statement
 case_when_clause
 cast
 cast_expression
+changes_clause
 close_cursor_statement
 cluster_by
 column
@@ -43,6 +44,7 @@ column_definitions
 comment
 comment_on_statement
 commit_statement
+connect_by
 constraint_action
 continue_statement
 copy_into_statement
@@ -94,6 +96,7 @@ exception_section
 execute_as_clause
 execute_immediate_statement
 exists
+explain_statement
 extract_expression
 fetch_cursor_statement
 field
@@ -111,10 +114,14 @@ grantee
 group_by
 grouping_sets
 having
+hierarchy
 identifier
 identifier_function
 if_statement
+insert_else
+insert_into
 insert_statement
+insert_when
 interval
 invocation
 is_not
@@ -133,7 +140,9 @@ keyword_api
 keyword_array
 keyword_as
 keyword_asc
+keyword_at
 keyword_autoincrement
+keyword_before
 keyword_begin
 keyword_between
 keyword_binary
@@ -145,6 +154,7 @@ keyword_caller
 keyword_cascade
 keyword_case
 keyword_cast
+keyword_changes
 keyword_char
 keyword_check
 keyword_clone
@@ -154,6 +164,7 @@ keyword_collate
 keyword_column
 keyword_comment
 keyword_commit
+keyword_connect
 keyword_constraint
 keyword_continue
 keyword_copy
@@ -193,6 +204,7 @@ keyword_exclude
 keyword_execute
 keyword_execute_as
 keyword_exists
+keyword_explain
 keyword_external
 keyword_extract
 keyword_facts
@@ -295,6 +307,7 @@ keyword_pivot
 keyword_policy
 keyword_preceding
 keyword_primary
+keyword_prior
 keyword_privileges
 keyword_procedure
 keyword_public
@@ -376,6 +389,7 @@ keyword_truncate
 keyword_try_cast
 keyword_type
 keyword_unbounded
+keyword_undrop
 keyword_union
 keyword_unique
 keyword_unpivot
@@ -476,6 +490,7 @@ sql_language
 sql_text_expression
 stage_reference
 stage_source
+start_with
 statement
 string_body
 subquery
@@ -485,10 +500,12 @@ tag_assignment
 task_option
 term
 time
+time_travel
 timestamp
 top_clause
 truncate_statement
 unary_expression
+undrop_statement
 unpivot_clause
 unset_statement
 update_statement

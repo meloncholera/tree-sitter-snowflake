@@ -25,13 +25,23 @@ test('release tags must be stable versions matching the root package', () => {
 
 test('resolve only real tags on main and prepare consistent npm metadata', () => {
   const root = mkdtempSync(join(tmpdir(), 'snowflake-release-'));
-  const run = (command, args, options) => execFileSync(command, args, { ...options, cwd: root, stdio: ['ignore', 'pipe', 'pipe'] });
+  const run = (command, args, options) =>
+    execFileSync(command, args, { ...options, cwd: root, stdio: ['ignore', 'pipe', 'pipe'] });
   const git = (...args) => run('git', args, { encoding: 'utf8' }).trim();
   try {
     git('init', '-b', 'main');
     writeFileSync(join(root, 'Cargo.toml'), '[package]\nname = "example"\nversion = "0.1.1"\n');
     git('add', 'Cargo.toml');
-    const initial = git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit-tree', git('write-tree'), '-m', 'initial');
+    const initial = git(
+      '-c',
+      'user.name=Test',
+      '-c',
+      'user.email=test@example.invalid',
+      'commit-tree',
+      git('write-tree'),
+      '-m',
+      'initial',
+    );
     git('update-ref', 'HEAD', initial);
     git('update-ref', 'refs/remotes/origin/main', 'HEAD');
     git('update-ref', 'refs/tags/v0.1.1', 'HEAD');
@@ -42,17 +52,34 @@ test('resolve only real tags on main and prepare consistent npm metadata', () =>
     assert.throws(() => resolveRelease('v0.1.3', run));
     writeFileSync(join(root, 'Cargo.toml'), '[package]\nversion = "0.1.2"\n');
     git('add', 'Cargo.toml');
-    const next = git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit-tree', git('write-tree'), '-p', initial, '-m', 'unpromoted');
+    const next = git(
+      '-c',
+      'user.name=Test',
+      '-c',
+      'user.email=test@example.invalid',
+      'commit-tree',
+      git('write-tree'),
+      '-p',
+      initial,
+      '-m',
+      'unpromoted',
+    );
     git('update-ref', 'HEAD', next);
     git('update-ref', 'refs/tags/v0.1.2', 'HEAD');
     assert.throws(() => resolveRelease('v0.1.2', run));
-    writeFileSync(join(root, 'package.json'), '{"name":"@meloncholic/tree-sitter-snowflake","version":"0.1.0"}');
+    writeFileSync(
+      join(root, 'package.json'),
+      '{"name":"@meloncholic/tree-sitter-snowflake","version":"0.1.0"}',
+    );
     writeFileSync(join(root, 'tree-sitter.json'), '{"metadata":{"version":"0.1.0"}}');
     prepareNpm('v0.1.2', pathToFileURL(root + '/'));
     const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
     assert.equal(pkg.version, '0.1.2');
     assert.equal(pkg.name, '@meloncholic/tree-sitter-snowflake');
-    assert.equal(JSON.parse(readFileSync(join(root, 'tree-sitter.json'), 'utf8')).metadata.version, '0.1.2');
+    assert.equal(
+      JSON.parse(readFileSync(join(root, 'tree-sitter.json'), 'utf8')).metadata.version,
+      '0.1.2',
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
